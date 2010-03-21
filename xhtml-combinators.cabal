@@ -1,0 +1,23 @@
+name: xhtml-combinators
+version: 0.0
+cabal-version: >= 1.2
+synopsis: Fast and easy to use xhtml combinators
+category: Web, Text
+license: BSD3
+license-file: LICENSE
+author: Alasdair Armstrong
+maintainer: alasdair.armstrong@googlemail.com
+build-type: Simple
+
+library
+  build-Depends: 
+    base, containers, mtl, xml >= 1.3.5, text >= 0.7
+  hs-source-dirs: src
+  exposed-modules: 
+    Text.XHtmlCombinators
+    Text.XHtmlCombinators.Internal
+    Text.XHtmlCombinators.Combinators
+    Text.XHtmlCombinators.Render
+    Text.XHtmlCombinators.Clash
+  extensions: OverloadedStrings
+  ghc-options: -O2
