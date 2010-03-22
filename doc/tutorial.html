@@ -1,0 +1,298 @@
+<html>
+<head>
+  <title>XHtml-Combinators Tutorial</title>
+  <style type="text/css">
+    <!--
+      body {
+        color: #bebebe;
+        background-color: #262626;
+      }
+      .doc {
+        /* font-lock-doc-face */
+        color: #87cefa;
+      }
+      .function-name {
+        /* font-lock-function-name-face */
+        color: #7fffd4;
+        font-weight: bold;
+      }
+      .keyword {
+        /* font-lock-keyword-face */
+        color: #afeeee;
+        font-weight: bold;
+      }
+      .string {
+        /* font-lock-string-face */
+        color: #87cefa;
+      }
+      .type {
+        /* font-lock-type-face */
+        color: #87ceeb;
+        font-weight: bold;
+      }
+      .variable-name {
+        /* font-lock-variable-name-face */
+        color: #40e0d0;
+        font-weight: bold;
+      }
+ 
+      #content {
+        width: 550px;
+	padding-left: 100px;
+      }
+
+      a {
+        color: inherit;
+        background-color: inherit;
+        font: inherit;
+        /* text-decoration: inherit; */
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+    -->
+  </style>
+</head>
+
+<body>
+<pre>
+      _     _             _                           _     _             _                 
+__  _| |__ | |_ _ __ ___ | |       ___ ___  _ __ ___ | |__ (_)_ __   __ _| |_ ___  _ __ ___ 
+\ \/ / '_ \| __| '_ ` _ \| |_____ / __/ _ \| '_ ` _ \| '_ \| | '_ \ / _` | __/ _ \| '__/ __|
+ >  <| | | | |_| | | | | | |_____| (_| (_) | | | | | | |_) | | | | | (_| | || (_) | |  \__ \
+/_/\_\_| |_|\__|_| |_| |_|_|      \___\___/|_| |_| |_|_.__/|_|_| |_|\__,_|\__\___/|_|  |___/
+                                                                                            
+--------------------------------------------------------------------------------------------
+</pre>
+<div id="content">
+<pre>
+        
+ /\ |_  _   _|_ 
+/--\|_)(_)|_||_ 
+</pre>
+
+<p>
+xhtml-combinators is a library for creating xhtml in haskell. 
+It is similar to in function to Bjorn Bringert's xhtml library     
+(available on hackage 
+<a href="http://hackage.haskell.org/package/xhtml">here</a>)
+</p>
+
+<p>
+Check out the code on github here: <br />
+<a href="http://github.com/Alasdair/xhtml-combinators">http://github.com/Alasdair/xhtml-combinators</a>
+</p>
+
+<pre>
+     ___               
+ /\   |  _|_ _ ._o _.| 
+/--\  ||_||_(_)| |(_|| ...
+
+... for xhtml-combinators 0.1
+</pre>
+
+<p>
+Let's start with the most simple page we can create. All it's 
+going to do is display the text 'Hello World' to the user.
+</p>
+
+<!-- Example 1 -->
+<pre>
+<span class="function-name">tut1</span> <span class="variable-name">::</span> <span class="type">XHtml</span> <span class="type">Page</span>
+<span class="function-name">tut1</span> <span class="variable-name">=</span> html <span class="type">True</span> <span class="variable-name">$</span> <span class="keyword">do</span>
+         head_ <span class="variable-name">$</span> title <span class="string">"Example 1"</span>
+         body <span class="variable-name">$</span> p (text <span class="string">"Hello, World"</span>)
+</pre>
+
+<p>Pretty easy, huh?</p>
+
+<h3>Name Decoration</h3>
+
+<p>
+You may be wondering what's up with the underscore after head. It's 
+probably a good idea now to go over xhtml-combinator's name 
+decoration policy for dealing with the names of xhtml elements that
+collide with the names in built in haskell functions.
+</p>
+
+<p>
+Any name which clashes with a built in haskell function, we append
+an underscore to, so &lt;head&gt; becomes <span class="function-name">head_</span> etc.
+</p>
+
+<p>
+We need to do this for the following elements and attributes:
+</p>
+
+<pre class="function-name">
+id, class, type, map, head, div, span
+</pre>
+
+<p>
+names-like-this become camelCase, so http-equiv becomes <span class="function-name">httpEquiv</span>.
+</p>
+
+<p>
+That's it! 
+</p>
+
+<h3>Attributes</h3>
+
+<p>
+You've already seen a basic example showing how combinators can
+be nested, but how do we add attributes?
+</p>
+
+<p>
+xhtml combinators defines two functions for each xhtml element, one
+which matches the name of the attribute (subject to the decoration names above)
+and another with a prime stuck on the end. So for &lt;body&gt; we have
+<span class="function-name">body</span> and
+<span class="function-name">body'</span>, while for &lt;head&gt; we
+have <span class="function-name">head_</span> and
+<span class="function-name">head'</span>. Attributes are given using the
+prime variant, like so:
+
+<pre>
+<span class="function-name">body'</span> [<span class="type">A</span><span class="variable-name">.</span>class_ <span class="string">"my-class"</span>, <span class="type">A</span><span class="variable-name">.</span>style <span class="string">"color: green;"</span>]</pre>
+</pre>
+
+<p>
+If an element requires an attribute, it becomes a standard argument
+of the combinator.
+</p>
+
+<h3>An Error Appears!</h3>
+
+<p>
+Couldn't we make our first example shorter though? Do we even need a 
+&lt;p&gt; tag? Let's try:
+</p>
+
+<pre>
+<span class="function-name">tut2</span> <span class="variable-name">::</span> <span class="type">XHtml</span> <span class="type">Page</span>
+<span class="function-name">tut2</span> <span class="variable-name">=</span> html <span class="type">True</span> <span class="variable-name">$</span> <span class="keyword">do</span>
+         head_ <span class="variable-name">$</span> title <span class="string">"Example 1"</span>
+         body <span class="variable-name">$</span> text <span class="string">"Hello, World"</span></pre>
+</pre>
+
+<p>
+Ok, now does it work? Try loading it in ghci!
+</p>
+
+<pre>
+doc/tutorial.hs:14:16:
+    No instance for (Text.XHtmlCombinators.Combinators.CData
+                       BlockContent)
+      arising from a use of `text' at doc/tutorial.hs:14:16-34
+    Possible fix:
+      add an instance declaration for
+      (Text.XHtmlCombinators.Combinators.CData BlockContent)
+    In the second argument of `($)', namely `text "Hello, World"'
+    In the expression: body $ text "Hello, World"
+    In the second argument of `($)', namely
+        `do head_ $ title "Example 1"
+            body $ text "Hello, World"'
+Failed, modules loaded: none.
+</pre>
+
+<p>
+Wait, what?!<br />
+That's a pretty scary error message, let's try to understand what
+it's complaining about.
+<p>
+
+<p>
+Looks like ghci couldn't find an instance of CData for the BlockContent
+type. Even if you don't know much about XHTML nor Haskell the whole
+CData and BlockContent thing should give the game away. We can't put
+character data directly into the body element - it's invalid XHTML!
+</p>
+
+<h3>The Power of the Types</h3>
+
+<p>
+Pretty cool eh? Haskell's type system just stopped us from generating
+invalid XHTML. Obviously we can't ensure that every XHTML page you
+generate is going to be 100% valid at compile time, but we can still 
+leverage the typechecker to rule out a large class of subtle mistakes.
+</p>
+
+<p>
+xhtml-combinators thinks in terms of three main element types. These are:
+</p>
+
+<pre class="type">
+BlockContent, FlowContent, InlineContent
+</pre>
+
+<p>
+There are a few more that are used for things like tables and lists, 
+but you don't have to worry about those too much. In order to 
+understand how
+xhtml-combinators checks the nesting of elements we need to look at
+a type signature:
+</p>
+
+<pre>
+<span class="function-name">pre'</span> <span class="variable-name">::</span> <span class="type">Block</span> c <span class="variable-name">=&gt;</span> <span class="type">Attrs</span> <span class="variable-name">-&gt;</span> <span class="type">XHtml</span> <span class="type">InlineContent</span> <span class="variable-name">-&gt;</span> <span class="type">XHtml</span> c</pre>
+</pre>
+
+<p>
+It may look complicated at first, but all it really means is that
+the &lt;pre&gt; tag contains inline content, and can be used in anything
+that can contain block level content (hence the
+ <span class="type">Block</span> type class).
+</p>
+
+<h3>A More Complex Example</h3>
+
+<pre>
+<span class="function-name">tut3</span> <span class="variable-name">=</span> html <span class="type">True</span> <span class="variable-name">$</span> <span class="keyword">do</span>
+    head_ <span class="variable-name">$</span> title <span class="string">"Example 2"</span>
+    body <span class="variable-name">$</span> <span class="keyword">do</span>
+        h2 (text <span class="string">"Example 2"</span>)
+        p <span class="variable-name">$</span> <span class="keyword">do</span> 
+            text <span class="string">"A slightly more complex example"</span>
+            br
+            text <span class="string">"foo"</span>
+            br
+            text <span class="string">"bar"</span>
+            br
+            text <span class="string">"baz"</span>
+        p' [<span class="type">A</span><span class="variable-name">.</span>style <span class="string">"color: red;"</span>] <span class="variable-name">$</span> <span class="keyword">do</span>
+            text <span class="string">"A red paragraph!"</span>
+        p (text <span class="string">"Now for a list of my favourite things beginning with the letter C"</span>)
+        ul <span class="variable-name">$</span> mapM_ (li <span class="variable-name">.</span> text) favs
+
+<span class="function-name">favs</span> <span class="variable-name">::</span> [<span class="type">Text</span>]
+<span class="function-name">favs</span> <span class="variable-name">=</span> [<span class="string">"Cookies"</span>, <span class="string">"Cider"</span>, <span class="string">"Cthulu"</span>]</pre>
+</pre>
+
+<p>
+One thing we havn't talked about yet is how to render our
+xhtml-combinator pages. There are currently two functions
+we can use for this:
+</p>
+
+<pre class="function-name">
+render, renderPretty
+</pre>
+
+<p>
+<span class="function-name">render</span> simply renders 
+our whole page. It's nice and efficient, but it produces
+unreadable output. <span class="function-name">renderPretty</span>
+is the exact opposite - it's horrifically inefficient, but
+it does format it's output nicely. You should really only
+use <span class="function-name">renderPretty</span> for
+debugging purposes.
+</p>
+
+<p>
+Of course, this tutorial is describing <em>version 0.1</em>,
+and things are bound to change and improve!
+</p>
+
+</body>
+</html>
