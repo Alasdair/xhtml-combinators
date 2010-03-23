@@ -1,10 +1,10 @@
-{-# LANGUAGE PatternGuards, PackageImports #-}
+{-# LANGUAGE PatternGuards #-}
 module Text.XHtmlCombinators.Internal where
 
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Identity
-import "transformers" Control.Monad.Trans
+import Control.Monad.Trans
 import Control.Monad.Trans.Writer
 import Data.Sequence
 import qualified Data.Sequence as Seq

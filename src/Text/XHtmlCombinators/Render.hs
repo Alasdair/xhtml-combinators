@@ -1,4 +1,3 @@
-{-# LANGUAGE PackageImports #-}
 module Text.XHtmlCombinators.Render 
     ( render, renderPretty
     , renderT, renderPrettyT

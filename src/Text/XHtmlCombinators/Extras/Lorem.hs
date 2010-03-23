@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, PackageImports #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Text.XHtmlCombinators.Extras.Lorem
     ( lorem', lorem
     , loremIO', loremIO
@@ -6,7 +6,7 @@ module Text.XHtmlCombinators.Extras.Lorem
 
 import Control.Applicative
 import Control.Monad
-import "transformers" Control.Monad.Trans
+import Control.Monad.Trans
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
 import Data.Monoid
