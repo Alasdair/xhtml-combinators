@@ -112,7 +112,7 @@ module Text.XHtmlCombinators
     , th', th
     , td', td
       -- * Rendering
-    , render
+    , render, renderT
     ) where
 
 import Text.XHtmlCombinators.Combinators
