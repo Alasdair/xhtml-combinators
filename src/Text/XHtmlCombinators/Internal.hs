@@ -1,4 +1,4 @@
-{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE PatternGuards, BangPatterns #-}
 module Text.XHtmlCombinators.Internal where
 
 import Control.Applicative

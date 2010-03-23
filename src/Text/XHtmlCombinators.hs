@@ -2,6 +2,7 @@ module Text.XHtmlCombinators
     ( -- * Types
       -- ** XHtml
       XHtmlM, XHtml
+    , Page
     , Content
     , Attrs, Attr (Attr)
       -- ** Element Types

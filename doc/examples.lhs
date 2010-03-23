@@ -3,6 +3,7 @@ Necessary extensions and imports:
 > {-# LANGUAGE OverloadedStrings #-}
 > import Text.XHtmlCombinators
 > import Text.XHtmlCombinators.Render
+> import qualified Text.XHtmlCombinators.Attributes as A
 
 > import Data.Text (Text)
 > import qualified Data.Text as T
@@ -42,7 +43,7 @@ A more complex example:
 >             text "bar"
 >             br
 >             text "baz"
->         p' [Attr "style" "color: red;"] $ do
+>         p' [A.style "color: red;"] $ do
 >             text "A red paragraph!"
 >         p (text "Now for a list of my favourite things beginning with the letter C")
 >         ul $ mapM_ (li . text) favs

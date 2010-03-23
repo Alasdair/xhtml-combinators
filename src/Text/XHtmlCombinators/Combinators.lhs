@@ -8,6 +8,12 @@
 >
 > import Text.XHtmlCombinators.Internal
 
+> -- Currently each element definition requires about 5 lines of
+> -- code, which is quite a lot of boilerplate.
+> --
+> -- In the future it might be better to use template Haskell or
+> -- even a little shell script to generate them.
+
 <!--
    Extensible HTML version 1.0 Strict DTD
 
@@ -31,7 +37,7 @@
 
 -->
 
-<!--================ Character mnemonic entities =========================-->
+> -- ================ Character mnemonic entities =========================-->
 
 <!ENTITY % HTMLlat1 PUBLIC
    "-//W3C//ENTITIES Latin 1 for XHTML//EN"
@@ -48,7 +54,7 @@
    "xhtml-special.ent">
 %HTMLspecial;
 
-<!--================== Imported Names ====================================-->
+> -- ================== Imported Names ====================================-->
 
 <!ENTITY % ContentType "CDATA">
     <!-- media type, as per [RFC2045] -->
@@ -111,7 +117,7 @@
 <!ENTITY % Coords "CDATA">
     <!-- comma separated list of lengths -->
 
-<!--=================== Generic Attributes ===============================-->
+> -- =================== Generic Attributes ===============================-->
 
 <!-- core attributes common to most elements
   id       document-wide unique id
@@ -176,7 +182,7 @@
 
 <!ENTITY % attrs "%coreattrs; %i18n; %events;">
 
-<!--=================== Text Elements ====================================-->
+> -- =================== Text Elements ====================================-->
 
 <!ENTITY % special.pre
    "br | span | bdo | map">
@@ -222,7 +228,7 @@
 > instance Inline InlineContent where inline = Inline
 > instance Inline FlowContent where inline = Flow
 
-<!--================== Block level elements ==============================-->
+> -- ================== Block level elements ==============================-->
 
 <!ENTITY % heading "h1|h2|h3|h4|h5|h6">
 <!ENTITY % lists "ul | ol | dl">
@@ -262,7 +268,7 @@
 > instance Flow InlineContent where flow = Inline
 > instance Flow FlowContent where flow = Flow
 
-<!--================== Content models for exclusions =====================-->
+> -- ================== Content models for exclusions =====================-->
 
 <!-- a elements use %Inline; excluding a -->
 
@@ -285,7 +291,7 @@
    "(#PCDATA | p | %heading; | div | %lists; | %blocktext; |
     table | %special; | %fontstyle; | %phrase; | %misc;)*">
 
-<!--================ Document Structure ==================================-->
+> -- ================ Document Structure ==================================-->
 
 <!-- the namespace URI designates the document profile -->
 
@@ -314,7 +320,7 @@
 > xmlDec = tellS . Page . TextNode $ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
 >
 > html' :: Bool -- ^ True for XML declaration, false to omit.
->      -> Attrs -> XHtml TopLevelContent -> XHtml Page
+>       -> Attrs -> XHtml TopLevelContent -> XHtml Page
 > html' useXmlDec attrs x = do
 >     if useXmlDec then xmlDec else empty
 >     doctype 
@@ -323,7 +329,7 @@
 > html :: Bool -> XHtml TopLevelContent -> XHtml Page
 > html useXmlDec = html' useXmlDec []
 
-<!--================ Document Head =======================================-->
+> -- ================ Document Head =======================================-->
 
 <!ENTITY % head.misc "(script|style|meta|link|object)*">
 
@@ -431,7 +437,8 @@
 > link :: XHtml HeadContent
 > link = link' []
 > -- ^ 'link' is a bit useless without any attributes, but it's 
-> -- included anyway for consistency reasons.
+> -- included anyway for consistency reasons. As are several
+> -- other similar elements.
 
 <!-- style info, which may include CDATA sections -->
 <!ELEMENT style (#PCDATA)>
@@ -482,7 +489,7 @@
 > noscript :: Block c => XHtml BlockContent -> XHtml c
 > noscript = noscript' []
 
-<!--=================== Document Body ====================================-->
+> -- =================== Document Body ====================================-->
 
 <!ELEMENT body %Block;>
 <!ATTLIST body
@@ -508,7 +515,7 @@
 > div_ :: Block c => XHtml FlowContent -> XHtml c
 > div_ = div' []
 
-<!--=================== Paragraphs =======================================-->
+> -- =================== Paragraphs =======================================-->
 
 <!ELEMENT p %Inline;>
 <!ATTLIST p
@@ -521,7 +528,7 @@
 > p :: Block c => XHtml InlineContent -> XHtml c
 > p = p' []
 
-<!--=================== Headings =========================================-->
+> -- =================== Headings =========================================-->
 
 <!--
   There are six levels of headings from h1 (the most important)
@@ -594,7 +601,7 @@
 > h6 :: Block c => XHtml InlineContent -> XHtml c
 > h6 = h6' []
 
-<!--=================== Lists ============================================-->
+> -- =================== Lists ============================================-->
 
 <!-- Unordered list -->
 
@@ -681,7 +688,7 @@
 > dd :: XHtml InlineContent -> XHtml DefinitionListContent
 > dd = dd' []
 
-<!--=================== Address ==========================================-->
+> -- =================== Address ==========================================-->
 
 <!-- information on author -->
 
@@ -696,7 +703,7 @@
 > address :: Block c => XHtml InlineContent -> XHtml c
 > address = address' []
 
-<!--=================== Horizontal Rule ==================================-->
+> -- =================== Horizontal Rule ==================================-->
 
 <!ELEMENT hr EMPTY>
 <!ATTLIST hr
@@ -709,7 +716,7 @@
 > hr :: Block c => XHtml c
 > hr = hr' []
 
-<!--=================== Preformatted Text ================================-->
+> -- =================== Preformatted Text ================================-->
 
 <!-- content is %Inline; excluding "img|object|big|small|sub|sup" -->
 
@@ -725,7 +732,7 @@
 > pre :: Block c => XHtml InlineContent -> XHtml c
 > pre = pre' []
 
-<!--=================== Block-like Quotes ================================-->
+> -- =================== Block-like Quotes ================================-->
 
 <!ELEMENT blockquote %Block;>
 <!ATTLIST blockquote
@@ -739,7 +746,7 @@
 > blockquote :: Block c => XHtml BlockContent -> XHtml c
 > blockquote = blockquote' []
 
-<!--=================== Inserted/Deleted Text ============================-->
+> -- =================== Inserted/Deleted Text ============================-->
 
 <!--
   ins/del are allowed in block and inline content, but its
@@ -772,7 +779,7 @@
 > del :: (Flow c, Content c) => XHtml c -> XHtml c
 > del = del' []
 
-<!--================== The Anchor Element ================================-->
+> -- ================== The Anchor Element ================================-->
 
 <!-- content is %Inline; except that anchors shouldn't be nested -->
 
@@ -797,7 +804,7 @@
 > a :: Inline c => XHtml InlineContent -> XHtml c
 > a = a' []
 
-<!--===================== Inline Elements ================================-->
+> -- ===================== Inline Elements ================================-->
 
 <!ELEMENT span %Inline;> <!-- generic language/style container -->
 <!ATTLIST span
@@ -1003,7 +1010,7 @@
 > small :: Inline c => XHtml InlineContent -> XHtml c
 > small = small' []
 
-<!--==================== Object ======================================-->
+> -- ==================== Object ======================================-->
 
 > newtype ObjectContent = Object { objectToNode :: Node }
 >
@@ -1066,7 +1073,7 @@
 > param :: XHtml ObjectContent
 > param = param' []
 
-<!--=================== Images ===========================================-->
+> -- =================== Images ===========================================-->
 
 <!--
    To avoid accessibility problems for people who aren't
@@ -1101,7 +1108,7 @@
 <!-- usemap points to a map element which may be in this document
   or an external document, although the latter is not widely supported -->
 
-<!--================== Client-side image maps ============================-->
+> -- ================== Client-side image maps ============================-->
 
 > newtype MapContent = Map { mapToNode :: Node }
 >
@@ -1152,7 +1159,7 @@
 > area :: Text -> XHtml MapContent
 > area = flip area' []
 
-<!--================ Forms ===============================================-->
+> -- ================ Forms ===============================================-->
 
 <!ELEMENT form %form.content;>   <!-- forms shouldn't be nested -->
 
@@ -1362,7 +1369,7 @@
 > button :: Inline c => XHtml FlowContent -> XHtml c
 > button = button' []
 
-<!--======================= Tables =======================================-->
+> -- ======================= Tables =======================================-->
 
 <!-- Derived from IETF HTML table standard, see [RFC1942] -->
 

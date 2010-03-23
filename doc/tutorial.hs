@@ -2,8 +2,8 @@
 import Text.XHtmlCombinators
 import Text.XHtmlCombinators.Render
 import qualified Text.XHtmlCombinators.Attributes as A
-import Data.Text.Lazy (Text)
-import qualified Data.Text.Lazy as T
+import Data.Text (Text)
+import qualified Data.Text as T
 
 tut1 :: XHtml Page
 tut1 = html True $ do

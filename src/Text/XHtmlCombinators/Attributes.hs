@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Text.XHtmlCombinators.Attributes where
 
-import Data.Text.Lazy (Text)
-import qualified Data.Text.Lazy as T
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Text.XHtmlCombinators.Internal
 
