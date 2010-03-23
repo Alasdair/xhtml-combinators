@@ -2,8 +2,9 @@
 > module Text.XHtmlCombinators.Combinators where
 >
 > import Control.Applicative hiding (empty)
-> import Data.Text (Text)
 > import qualified Data.Sequence as Seq
+>
+> import Data.Text (Text)
 > import qualified Data.Text as T
 >
 > import Text.XHtmlCombinators.Internal
@@ -211,7 +212,7 @@
 > class CData c where
 >     cdata :: Text -> c
 >
-> text :: CData c => Text -> XHtml c
+> text :: (Functor t, Monad t, CData c) => Text -> XHtmlT t c
 > text = tellS . cdata
 >
 > newtype InlineContent = Inline { inlineToNode :: Node }
@@ -315,18 +316,21 @@
 > xhtml10strict = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"\
 >                 \ \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"
 >
+> doctype :: (Functor t, Monad t) => XHtmlT t Page
 > doctype = tellS . Page . TextNode $ xhtml10strict
 >
+> xmlDec :: (Functor t, Monad t) => XHtmlT t Page
 > xmlDec = tellS . Page . TextNode $ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
 >
-> html' :: Bool -- ^ True for XML declaration, false to omit.
->       -> Attrs -> XHtml TopLevelContent -> XHtml Page
+> html' :: (Functor t, Monad t)
+>       => Bool -- ^ True for XML declaration, false to omit.
+>       -> Attrs -> XHtmlT t TopLevelContent -> XHtmlT t Page
 > html' useXmlDec attrs x = do
 >     if useXmlDec then xmlDec else empty
 >     doctype 
 >     tellNode Page "html" [Attr "xmlns" "http://www.w3.org/1999/xhtml"] attrs x
 >
-> html :: Bool -> XHtml TopLevelContent -> XHtml Page
+> html :: (Functor t, Monad t) => Bool -> XHtmlT t TopLevelContent -> XHtmlT t Page
 > html useXmlDec = html' useXmlDec []
 
 > -- ================ Document Head =======================================-->
@@ -351,10 +355,10 @@
   profile     %URI;          #IMPLIED
   >
 
-> head' :: Attrs -> XHtml HeadContent -> XHtml TopLevelContent
+> head' :: (Functor t, Monad t) => Attrs -> XHtmlT t HeadContent -> XHtmlT t TopLevelContent
 > head' = tellNode TopLevel "head" []
 >
-> head_ :: XHtml HeadContent -> XHtml TopLevelContent
+> head_ :: (Functor t, Monad t) => XHtmlT t HeadContent -> XHtmlT t TopLevelContent
 > head_ = head' []
 
 <!-- The title element is not considered part of the flow of text.
@@ -367,10 +371,10 @@
   id          ID             #IMPLIED
   >
 
-> title' :: Attrs -> Text -> XHtml HeadContent
+> title' :: (Functor t, Monad t) => Attrs -> Text -> XHtmlT t HeadContent
 > title' = tellTextNode Head "title" []
 >
-> title :: Text -> XHtml HeadContent
+> title :: (Functor t, Monad t) => Text -> XHtmlT t HeadContent
 > title = title' []
 
 <!-- document base URI -->
@@ -381,10 +385,10 @@
   id          ID             #IMPLIED
   >
 
-> base' :: Text -> Attrs -> XHtml HeadContent
+> base' :: (Functor t, Monad t) => Text -> Attrs -> XHtmlT t HeadContent
 > base' href = tellEmptyNode Head "base" [Attr "href" href]
 >
-> base :: Text -> XHtml HeadContent
+> base :: (Functor t, Monad t) => Text -> XHtmlT t HeadContent
 > base = flip base' []
 
 <!-- generic metainformation -->
@@ -398,11 +402,11 @@
   scheme      CDATA          #IMPLIED
   >
 
-> meta' :: Text -- ^ Required content attribute.
->       -> Attrs -> XHtml HeadContent
+> meta' :: (Functor t, Monad t) => Text -- ^ Required content attribute.
+>       -> Attrs -> XHtmlT t HeadContent
 > meta' content = tellEmptyNode Head "meta" [Attr "content" content]
 >
-> meta :: Text -> XHtml HeadContent
+> meta :: (Functor t, Monad t) => Text -> XHtmlT t HeadContent
 > meta = flip meta' []
 
 <!--
@@ -431,10 +435,10 @@
   media       %MediaDesc;    #IMPLIED
   >
 
-> link' :: Attrs -> XHtml HeadContent
+> link' :: (Functor t, Monad t) => Attrs -> XHtmlT t HeadContent
 > link' = tellEmptyNode Head "link" []
 >
-> link :: XHtml HeadContent
+> link :: (Functor t, Monad t) => XHtmlT t HeadContent
 > link = link' []
 > -- ^ 'link' is a bit useless without any attributes, but it's 
 > -- included anyway for consistency reasons. As are several
@@ -451,11 +455,11 @@
   xml:space   (preserve)     #FIXED 'preserve'
   >
 
-> style' :: Text -- ^ Required type attribute.
->        -> Attrs -> Text -> XHtml HeadContent
+> style' :: (Functor t, Monad t) => Text -- ^ Required type attribute.
+>        -> Attrs -> Text -> XHtmlT t HeadContent
 > style' sType = tellTextNode Head "style" [Attr "type" sType]
 >
-> style :: Text -> Text -> XHtml HeadContent
+> style :: (Functor t, Monad t) => Text -> Text -> XHtmlT t HeadContent
 > style = flip style' []
 
 <!-- script statements, which may include CDATA sections -->
@@ -469,11 +473,12 @@
   xml:space   (preserve)     #FIXED 'preserve'
   >
 
-> script' :: Text -- ^ Required type attribute.
->         -> Attrs -> Text -> XHtml HeadContent
+> script' :: (Functor t, Monad t) 
+>         => Text -- ^ Required type attribute.
+>         -> Attrs -> Text -> XHtmlT t HeadContent
 > script' sType = tellTextNode Head "script" [Attr "type" sType]
 >
-> script :: Text -> Text -> XHtml HeadContent
+> script :: (Functor t, Monad t) => Text -> Text -> XHtmlT t HeadContent
 > script = flip script' []
 
 <!-- alternate content container for non script-based rendering -->
@@ -483,10 +488,10 @@
   %attrs;
   >
 
-> noscript' :: Block c => Attrs -> XHtml BlockContent -> XHtml c
+> noscript' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t BlockContent -> XHtmlT t c
 > noscript' = tellNode block "noscript" []
 >
-> noscript :: Block c => XHtml BlockContent -> XHtml c
+> noscript :: (Functor t, Monad t, Block c) => XHtmlT t BlockContent -> XHtmlT t c
 > noscript = noscript' []
 
 > -- =================== Document Body ====================================-->
@@ -498,10 +503,10 @@
   onunload        %Script;   #IMPLIED
   >
 
-> body' :: Attrs -> XHtml BlockContent -> XHtml TopLevelContent
+> body' :: (Functor t, Monad t) => Attrs -> XHtmlT t BlockContent -> XHtmlT t TopLevelContent
 > body' = tellNode TopLevel "body" []
 >
-> body :: XHtml BlockContent -> XHtml TopLevelContent
+> body :: (Functor t, Monad t) => XHtmlT t BlockContent -> XHtmlT t TopLevelContent
 > body = body' [] 
 
 <!ELEMENT div %Flow;>  <!-- generic language/style container -->
@@ -509,10 +514,10 @@
   %attrs;
   >
 
-> div' :: Block c => Attrs -> XHtml FlowContent -> XHtml c
+> div' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t FlowContent -> XHtmlT t c
 > div' = tellNode block "div" []
 > 
-> div_ :: Block c => XHtml FlowContent -> XHtml c
+> div_ :: (Functor t, Monad t, Block c) => XHtmlT t FlowContent -> XHtmlT t c
 > div_ = div' []
 
 > -- =================== Paragraphs =======================================-->
@@ -522,10 +527,10 @@
   %attrs;
   >
 
-> p' :: Block c => Attrs -> XHtml InlineContent -> XHtml c
+> p' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > p' = tellNode block "p" []
 >
-> p :: Block c => XHtml InlineContent -> XHtml c
+> p :: (Functor t, Monad t, Block c) => XHtmlT t InlineContent -> XHtmlT t c
 > p = p' []
 
 > -- =================== Headings =========================================-->
@@ -540,10 +545,10 @@
    %attrs;
    >
 
-> h1' :: Block c => Attrs -> XHtml InlineContent -> XHtml c
+> h1' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > h1' = tellNode block "h1" []
 >
-> h1 :: Block c => XHtml InlineContent -> XHtml c
+> h1 :: (Functor t, Monad t, Block c) => XHtmlT t InlineContent -> XHtmlT t c
 > h1 = h1' []
 
 <!ELEMENT h2 %Inline;>
@@ -551,10 +556,10 @@
    %attrs;
    >
 
-> h2' :: Block c => Attrs -> XHtml InlineContent -> XHtml c
+> h2' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > h2' = tellNode block "h2" []
 >
-> h2 :: Block c => XHtml InlineContent -> XHtml c
+> h2 :: (Functor t, Monad t, Block c) => XHtmlT t InlineContent -> XHtmlT t c
 > h2 = h2' []
 
 <!ELEMENT h3 %Inline;>
@@ -562,10 +567,10 @@
    %attrs;
    >
 
-> h3' :: Block c => Attrs -> XHtml InlineContent -> XHtml c
+> h3' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > h3' = tellNode block "h3" []
 >
-> h3 :: Block c => XHtml InlineContent -> XHtml c
+> h3 :: (Functor t, Monad t, Block c) => XHtmlT t InlineContent -> XHtmlT t c
 > h3 = h3' []
 
 <!ELEMENT h4 %Inline;>
@@ -573,10 +578,10 @@
    %attrs;
    >
 
-> h4' :: Block c => Attrs -> XHtml InlineContent -> XHtml c
+> h4' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > h4' = tellNode block "h4" []
 >
-> h4 :: Block c => XHtml InlineContent -> XHtml c
+> h4 :: (Functor t, Monad t, Block c) => XHtmlT t InlineContent -> XHtmlT t c
 > h4 = h4' []
 
 <!ELEMENT h5 %Inline;>
@@ -584,10 +589,10 @@
    %attrs;
    >
 
-> h5' :: Block c => Attrs -> XHtml InlineContent -> XHtml c
+> h5' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > h5' = tellNode block "h5" []
 >
-> h5 :: Block c => XHtml InlineContent -> XHtml c
+> h5 :: (Functor t, Monad t, Block c) => XHtmlT t InlineContent -> XHtmlT t c
 > h5 = h5' []
 
 <!ELEMENT h6 %Inline;>
@@ -595,10 +600,10 @@
    %attrs;
    >
 
-> h6' :: Block c => Attrs -> XHtml InlineContent -> XHtml c
+> h6' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > h6' = tellNode block "h6" []
 >
-> h6 :: Block c => XHtml InlineContent -> XHtml c
+> h6 :: (Functor t, Monad t, Block c) => XHtmlT t InlineContent -> XHtmlT t c
 > h6 = h6' []
 
 > -- =================== Lists ============================================-->
@@ -615,10 +620,10 @@
   %attrs;
   >
 
-> ul' :: Block c => Attrs -> XHtml ListContent -> XHtml c
+> ul' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t ListContent -> XHtmlT t c
 > ul' = tellNode block "ul" []
 >
-> ul :: Block c => XHtml ListContent -> XHtml c
+> ul :: (Functor t, Monad t, Block c) => XHtmlT t ListContent -> XHtmlT t c
 > ul = ul' []
 
 <!-- Ordered (numbered) list -->
@@ -628,10 +633,10 @@
   %attrs;
   >
 
-> ol' :: Block c => Attrs -> XHtml ListContent -> XHtml c
+> ol' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t ListContent -> XHtmlT t c
 > ol' = tellNode block "ol" []
 >
-> ol :: Block c => XHtml ListContent -> XHtml c
+> ol :: (Functor t, Monad t, Block c) => XHtmlT t ListContent -> XHtmlT t c
 > ol = ol' []
 
 <!-- list item -->
@@ -641,10 +646,10 @@
   %attrs;
   >
 
-> li' :: Attrs -> XHtml FlowContent -> XHtml ListContent
+> li' :: (Functor t, Monad t) => Attrs -> XHtmlT t FlowContent -> XHtmlT t ListContent
 > li' = tellNode List "li" []
 >
-> li :: XHtml FlowContent -> XHtml ListContent
+> li :: (Functor t, Monad t) => XHtmlT t FlowContent -> XHtmlT t ListContent
 > li = li' []
 
 <!-- definition lists - dt for term, dd for its definition -->
@@ -660,10 +665,10 @@
   %attrs;
   >
 
-> dl' :: Block c => Attrs -> XHtml DefinitionListContent -> XHtml c
+> dl' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t DefinitionListContent -> XHtmlT t c
 > dl' = tellNode block "dl" []
 >
-> dl :: Block c => XHtml DefinitionListContent -> XHtml c
+> dl :: (Functor t, Monad t, Block c) => XHtmlT t DefinitionListContent -> XHtmlT t c
 > dl = dl' []
 
 <!ELEMENT dt %Inline;>
@@ -671,10 +676,10 @@
   %attrs;
   >
 
-> dt' :: Attrs -> XHtml InlineContent -> XHtml DefinitionListContent
+> dt' :: (Functor t, Monad t) => Attrs -> XHtmlT t InlineContent -> XHtmlT t DefinitionListContent
 > dt' = tellNode DefinitionList "dt" []
 >
-> dt :: XHtml InlineContent -> XHtml DefinitionListContent
+> dt :: (Functor t, Monad t) => XHtmlT t InlineContent -> XHtmlT t DefinitionListContent
 > dt = dt' []
 
 <!ELEMENT dd %Flow;>
@@ -682,10 +687,10 @@
   %attrs;
   >
 
-> dd' :: Attrs -> XHtml InlineContent -> XHtml DefinitionListContent
+> dd' :: (Functor t, Monad t) => Attrs -> XHtmlT t InlineContent -> XHtmlT t DefinitionListContent
 > dd' = tellNode DefinitionList "dd" []
 >
-> dd :: XHtml InlineContent -> XHtml DefinitionListContent
+> dd :: (Functor t, Monad t) => XHtmlT t InlineContent -> XHtmlT t DefinitionListContent
 > dd = dd' []
 
 > -- =================== Address ==========================================-->
@@ -697,10 +702,10 @@
   %attrs;
   >
 
-> address' :: Block c => Attrs -> XHtml InlineContent -> XHtml c
+> address' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > address' = tellNode block "address" []
 >
-> address :: Block c => XHtml InlineContent -> XHtml c
+> address :: (Functor t, Monad t, Block c) => XHtmlT t InlineContent -> XHtmlT t c
 > address = address' []
 
 > -- =================== Horizontal Rule ==================================-->
@@ -710,10 +715,10 @@
   %attrs;
   >
 
-> hr' :: Block c => Attrs -> XHtml c
+> hr' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t c
 > hr' = tellEmptyNode block "hr" []
 >
-> hr :: Block c => XHtml c
+> hr :: (Functor t, Monad t, Block c) => XHtmlT t c
 > hr = hr' []
 
 > -- =================== Preformatted Text ================================-->
@@ -726,10 +731,10 @@
   xml:space (preserve) #FIXED 'preserve'
   >
 
-> pre' :: Block c => Attrs -> XHtml InlineContent -> XHtml c
+> pre' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > pre' = tellNode block "pre" []
 >
-> pre :: Block c => XHtml InlineContent -> XHtml c
+> pre :: (Functor t, Monad t, Block c) => XHtmlT t InlineContent -> XHtmlT t c
 > pre = pre' []
 
 > -- =================== Block-like Quotes ================================-->
@@ -740,10 +745,10 @@
   cite        %URI;          #IMPLIED
   >
 
-> blockquote' :: Block c => Attrs -> XHtml BlockContent -> XHtml c
+> blockquote' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t BlockContent -> XHtmlT t c
 > blockquote' = tellNode block "blockquote" []
 >
-> blockquote :: Block c => XHtml BlockContent -> XHtml c
+> blockquote :: (Functor t, Monad t, Block c) => XHtmlT t BlockContent -> XHtmlT t c
 > blockquote = blockquote' []
 
 > -- =================== Inserted/Deleted Text ============================-->
@@ -760,10 +765,10 @@
   datetime    %Datetime;     #IMPLIED
   >
 
-> ins' :: (Flow c, Content c) => Attrs -> XHtml c -> XHtml c
+> ins' :: (Functor t, Monad t) => (Flow c, Content c) => Attrs -> XHtmlT t c -> XHtmlT t c
 > ins' = tellNode flow "ins" []
 >
-> ins :: (Flow c, Content c) => XHtml c -> XHtml c
+> ins :: (Functor t, Monad t) => (Flow c, Content c) => XHtmlT t c -> XHtmlT t c
 > ins = ins' []
 
 <!ELEMENT del %Flow;>
@@ -773,10 +778,10 @@
   datetime    %Datetime;     #IMPLIED
   >
 
-> del' :: (Flow c, Content c) => Attrs -> XHtml c -> XHtml c
+> del' :: (Functor t, Monad t) => (Flow c, Content c) => Attrs -> XHtmlT t c -> XHtmlT t c
 > del' = tellNode flow "del" []
 >
-> del :: (Flow c, Content c) => XHtml c -> XHtml c
+> del :: (Functor t, Monad t) => (Flow c, Content c) => XHtmlT t c -> XHtmlT t c
 > del = del' []
 
 > -- ================== The Anchor Element ================================-->
@@ -798,10 +803,10 @@
   coords      %Coords;       #IMPLIED
   >
 
-> a' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> a' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > a' = tellNode inline "a" []
 >
-> a :: Inline c => XHtml InlineContent -> XHtml c
+> a :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > a = a' []
 
 > -- ===================== Inline Elements ================================-->
@@ -811,10 +816,10 @@
   %attrs;
   >
 
-> span' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> span' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > span' = tellNode inline "span" []
 >
-> span_ :: Inline c => XHtml InlineContent -> XHtml c
+> span_ :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > span_ = span' []
 
 <!ELEMENT bdo %Inline;>  <!-- I18N BiDi over-ride -->
@@ -826,12 +831,12 @@
   dir         (ltr|rtl)      #REQUIRED
   >
 
-> bdo' :: Inline c 
+> bdo' :: (Functor t, Monad t, Inline c) 
 >      => Text -- ^ Required language direction code.
->      -> Attrs -> XHtml InlineContent -> XHtml c
+>      -> Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > bdo' dir = tellNode inline "bdo" [Attr "dir" dir]
 >
-> bdo :: Inline c => Text -> XHtml InlineContent -> XHtml c
+> bdo :: (Functor t, Monad t, Inline c) => Text -> XHtmlT t InlineContent -> XHtmlT t c
 > bdo = flip bdo' []
 
 <!ELEMENT br EMPTY>   <!-- forced line break -->
@@ -839,100 +844,100 @@
   %coreattrs;
   >
 
-> br' :: Inline c => Attrs -> XHtml c
+> br' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t c
 > br' = tellEmptyNode inline "br" []
 >
-> br :: Inline c => XHtml c
+> br :: (Functor t, Monad t, Inline c) => XHtmlT t c
 > br = br' []
 
 <!ELEMENT em %Inline;>   <!-- emphasis -->
 <!ATTLIST em %attrs;>
 
-> em' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> em' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > em' = tellNode inline "em" []
 >
-> em :: Inline c => XHtml InlineContent -> XHtml c
+> em :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > em = em' []
 
 <!ELEMENT strong %Inline;>   <!-- strong emphasis -->
 <!ATTLIST strong %attrs;>
 
-> strong' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> strong' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > strong' = tellNode inline "strong" []
 >
-> strong :: Inline c => XHtml InlineContent -> XHtml c
+> strong :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > strong = strong' []
 
 <!ELEMENT dfn %Inline;>   <!-- definitional -->
 <!ATTLIST dfn %attrs;>
 
-> dfn' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> dfn' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > dfn' = tellNode inline "dfn" []
 >
-> dfn :: Inline c => XHtml InlineContent -> XHtml c
+> dfn :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > dfn = dfn' []
 
 <!ELEMENT code %Inline;>   <!-- program code -->
 <!ATTLIST code %attrs;>
 
-> code' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> code' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > code' = tellNode inline "code" []
 >
-> code :: Inline c => XHtml InlineContent -> XHtml c
+> code :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > code = code' []
 
 <!ELEMENT samp %Inline;>   <!-- sample -->
 <!ATTLIST samp %attrs;>
 
-> samp' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> samp' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > samp' = tellNode inline "samp" []
 >
-> samp :: Inline c => XHtml InlineContent -> XHtml c
+> samp :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > samp = samp' []
 
 <!ELEMENT kbd %Inline;>  <!-- something user would type -->
 <!ATTLIST kbd %attrs;>
 
-> kbd' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> kbd' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > kbd' = tellNode inline "kbd" []
 >
-> kbd :: Inline c => XHtml InlineContent -> XHtml c
+> kbd :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > kbd = kbd' []
 
 <!ELEMENT var %Inline;>   <!-- variable -->
 <!ATTLIST var %attrs;>
 
-> var' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> var' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > var' = tellNode inline "var" []
 >
-> var :: Inline c => XHtml InlineContent -> XHtml c
+> var :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > var = var' []
 
 <!ELEMENT cite %Inline;>   <!-- citation -->
 <!ATTLIST cite %attrs;>
 
-> cite' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> cite' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > cite' = tellNode inline "cite" []
 >
-> cite :: Inline c => XHtml InlineContent -> XHtml c
+> cite :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > cite = cite' []
 
 <!ELEMENT abbr %Inline;>   <!-- abbreviation -->
 <!ATTLIST abbr %attrs;>
 
-> abbr' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> abbr' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > abbr' = tellNode inline "abbr" []
 >
-> abbr :: Inline c => XHtml InlineContent -> XHtml c
+> abbr :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > abbr = abbr' []
 
 <!ELEMENT acronym %Inline;>   <!-- acronym -->
 <!ATTLIST acronym %attrs;>
 
-> acronym' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> acronym' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > acronym' = tellNode inline "acronym" []
 >
-> acronym :: Inline c => XHtml InlineContent -> XHtml c
+> acronym :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > acronym = acronym' []
 
 <!ELEMENT q %Inline;>   <!-- inlined quote -->
@@ -941,73 +946,73 @@
   cite        %URI;          #IMPLIED
   >
 
-> q' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> q' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > q' = tellNode inline "q" []
 >
-> q :: Inline c => XHtml InlineContent -> XHtml c
+> q :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > q = q' []
 
 <!ELEMENT sub %Inline;> <!-- subscript -->
 <!ATTLIST sub %attrs;>
 
-> sub' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> sub' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > sub' = tellNode inline "sub" []
 >
-> sub :: Inline c => XHtml InlineContent -> XHtml c
+> sub :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > sub = sub' []
 
 <!ELEMENT sup %Inline;> <!-- superscript -->
 <!ATTLIST sup %attrs;>
 
-> sup' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> sup' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > sup' = tellNode inline "sup" []
 >
-> sup :: Inline c => XHtml InlineContent -> XHtml c
+> sup :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > sup = sup' []
 
 <!ELEMENT tt %Inline;>   <!-- fixed pitch font -->
 <!ATTLIST tt %attrs;>
 
-> tt' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> tt' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > tt' = tellNode inline "tt" []
 >
-> tt :: Inline c => XHtml InlineContent -> XHtml c
+> tt :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > tt = tt' []
 
 <!ELEMENT i %Inline;>   <!-- italic font -->
 <!ATTLIST i %attrs;>
 
-> i' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> i' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > i' = tellNode inline "i" []
 >
-> i :: Inline c => XHtml InlineContent -> XHtml c
+> i :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > i = i' []
 
 <!ELEMENT b %Inline;>   <!-- bold font -->
 <!ATTLIST b %attrs;>
 
-> b' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> b' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > b' = tellNode inline "b" []
 >
-> b :: Inline c => XHtml InlineContent -> XHtml c
+> b :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > b = b' []
 
 <!ELEMENT big %Inline;>   <!-- bigger font -->
 <!ATTLIST big %attrs;>
 
-> big' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> big' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > big' = tellNode inline "big" []
 >
-> big :: Inline c => XHtml InlineContent -> XHtml c
+> big :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > big = big' []
 
 <!ELEMENT small %Inline;>   <!-- smaller font -->
 <!ATTLIST small %attrs;>
 
-> small' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> small' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > small' = tellNode inline "small" []
 >
-> small :: Inline c => XHtml InlineContent -> XHtml c
+> small :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > small = small' []
 
 > -- ==================== Object ======================================-->
@@ -1046,10 +1051,10 @@
   tabindex    %Number;       #IMPLIED
   >
 
-> object' :: Flow c => Attrs -> XHtml ObjectContent -> XHtml c
+> object' :: (Functor t, Monad t, Flow c) => Attrs -> XHtmlT t ObjectContent -> XHtmlT t c
 > object' = tellNode flow "object" []
 >
-> object :: Flow c => XHtml ObjectContent -> XHtml c
+> object :: (Functor t, Monad t, Flow c) => XHtmlT t ObjectContent -> XHtmlT t c
 > object = object' []
 
 <!--
@@ -1067,10 +1072,10 @@
   type        %ContentType;  #IMPLIED
   >
 
-> param' :: Attrs -> XHtml ObjectContent
+> param' :: (Functor t, Monad t) => Attrs -> XHtmlT t ObjectContent
 > param' = tellEmptyNode Object "param" []
 >
-> param :: XHtml ObjectContent
+> param :: (Functor t, Monad t) => XHtmlT t ObjectContent
 > param = param' []
 
 > -- =================== Images ===========================================-->
@@ -1096,13 +1101,13 @@
   ismap       (ismap)        #IMPLIED
   >
 
-> img' :: Flow c 
+> img' :: (Functor t, Monad t, Flow c) 
 >      => Text -- ^ Required src attribute. 
 >      -> Text -- ^ Required alt attribute.
->      -> Attrs -> XHtml c
+>      -> Attrs -> XHtmlT t c
 > img' src alt = tellEmptyNode flow "img" []
 >
-> img :: Flow c => Text -> Text -> XHtml c
+> img :: (Functor t, Monad t, Flow c) => Text -> Text -> XHtmlT t c
 > img src alt = img' src alt [Attr "src" src, Attr "alt" alt]
 
 <!-- usemap points to a map element which may be in this document
@@ -1133,12 +1138,12 @@
   name        NMTOKEN        #IMPLIED
   >
 
-> map' :: Flow c 
+> map' :: (Functor t, Monad t, Flow c) 
 >      => Text -- ^ Required id attribute. 
->      -> Attrs -> XHtml MapContent -> XHtml c
+>      -> Attrs -> XHtmlT t MapContent -> XHtmlT t c
 > map' id = tellNode flow "map" [Attr "id" id]
 >
-> map_ :: Flow c => Text -> XHtml MapContent -> XHtml c
+> map_ :: (Functor t, Monad t, Flow c) => Text -> XHtmlT t MapContent -> XHtmlT t c
 > map_ = flip map' []
 
 <!ELEMENT area EMPTY>
@@ -1152,11 +1157,11 @@
   alt         %Text;         #REQUIRED
   >
 
-> area' :: Text -- ^ Required alt attribute.
->       -> Attrs -> XHtml MapContent
+> area' :: (Functor t, Monad t) => Text -- ^ Required alt attribute.
+>       -> Attrs -> XHtmlT t MapContent
 > area' alt = tellEmptyNode Map "area" [Attr "alt" alt]
 >
-> area :: Text -> XHtml MapContent
+> area :: (Functor t, Monad t) => Text -> XHtmlT t MapContent
 > area = flip area' []
 
 > -- ================ Forms ===============================================-->
@@ -1174,12 +1179,12 @@
   accept-charset %Charsets;  #IMPLIED
   >
 
-> form' :: Block c 
+> form' :: (Functor t, Monad t, Block c)
 >       => Text -- ^ Required action attribute. 
->       -> Attrs -> XHtml FlowContent -> XHtml c
+>       -> Attrs -> XHtmlT t FlowContent -> XHtmlT t c
 > form' action = tellNode block "form" [Attr "action" action]
 >
-> form :: Block c => Text -> XHtml FlowContent -> XHtml c
+> form :: (Functor t, Monad t, Block c) => Text -> XHtmlT t FlowContent -> XHtmlT t c
 > form = flip form' []
 
 <!--
@@ -1195,10 +1200,10 @@
   onblur      %Script;       #IMPLIED
   >
 
-> label' :: Inline c => Attrs -> XHtml InlineContent -> XHtml c
+> label' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t InlineContent -> XHtmlT t c
 > label' = tellNode inline "label" []
 >
-> label :: Inline c => XHtml InlineContent -> XHtml c
+> label :: (Functor t, Monad t, Inline c) => XHtmlT t InlineContent -> XHtmlT t c
 > label = label' []
 
 <!ENTITY % InputType
@@ -1229,10 +1234,10 @@
   accept      %ContentTypes; #IMPLIED
   >
 
-> input' :: Inline c => Attrs -> XHtml c
+> input' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t c
 > input' = tellEmptyNode inline "input" []
 >
-> input :: Inline c => XHtml c
+> input :: (Functor t, Monad t, Inline c) => XHtmlT t c
 > input = input' []
 
 <!ELEMENT select (optgroup|option)+>  <!-- option selector -->
@@ -1253,10 +1258,10 @@
 > instance Content OptionContent where 
 >     toContent = optionToNode
 >
-> select' :: Inline c => Attrs -> XHtml OptionContent -> XHtml c 
+> select' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t OptionContent -> XHtmlT t c 
 > select' = tellNode inline "select" []
 >
-> select :: Inline c => XHtml OptionContent -> XHtml c
+> select :: (Functor t, Monad t, Inline c) => XHtmlT t OptionContent -> XHtmlT t c
 > select = select' []
 
 <!ELEMENT optgroup (option)+>   <!-- option group -->
@@ -1266,11 +1271,11 @@
   label       %Text;         #REQUIRED
   >
 
-> optgroup' :: Text -- ^ Required label attribute. 
->           -> Attrs -> XHtml OptionContent -> XHtml OptionContent
+> optgroup' :: (Functor t, Monad t) => Text -- ^ Required label attribute. 
+>           -> Attrs -> XHtmlT t OptionContent -> XHtmlT t OptionContent
 > optgroup' label = tellNode Option "optgroup" [Attr "label" label]
 >
-> optgroup :: Text -> XHtml OptionContent -> XHtml OptionContent
+> optgroup :: (Functor t, Monad t) => Text -> XHtmlT t OptionContent -> XHtmlT t OptionContent
 > optgroup = flip optgroup' []
 
 <!ELEMENT option (#PCDATA)>     <!-- selectable choice -->
@@ -1282,10 +1287,10 @@
   value       CDATA          #IMPLIED
   >
 
-> option' :: Attrs -> Text -> XHtml OptionContent
+> option' :: (Functor t, Monad t) => Attrs -> Text -> XHtmlT t OptionContent
 > option' = tellTextNode Option "option" []
 >
-> option :: Text -> XHtml OptionContent
+> option :: (Functor t, Monad t) => Text -> XHtmlT t OptionContent
 > option = option' []
 
 <!ELEMENT textarea (#PCDATA)>     <!-- multi-line text field -->
@@ -1301,16 +1306,16 @@
   onchange    %Script;       #IMPLIED
   >
 
-> textarea' :: Inline c
+> textarea' :: (Functor t, Monad t, Inline c)
 >           => Int -- ^ Required rows attribute.
 >           -> Int -- ^ Required cols attribute.
->           -> Attrs -> Text -> XHtml c
+>           -> Attrs -> Text -> XHtmlT t c
 > textarea' rows cols = tellTextNode inline "textarea" 
 >                           [ Attr "rows" (T.pack (show rows))
 >                           , Attr "cols" (T.pack (show cols))
 >                           ]
 > 
-> textarea :: Inline c => Int -> Int -> Text -> XHtml c
+> textarea :: (Functor t, Monad t, Inline c) => Int -> Int -> Text -> XHtmlT t c
 > textarea  rows cols = textarea' rows cols []
 
 <!--
@@ -1332,10 +1337,10 @@
 > instance Inline FieldSetContent where inline = FieldSet
 > instance Block FieldSetContent where block = FieldSet
 
-> fieldset' :: Block c => Attrs -> XHtml FieldSetContent -> XHtml c
+> fieldset' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t FieldSetContent -> XHtmlT t c
 > fieldset' = tellNode block "fieldset" []
 >
-> fieldset :: Block c => XHtml FieldSetContent -> XHtml c
+> fieldset :: (Functor t, Monad t, Block c) => XHtmlT t FieldSetContent -> XHtmlT t c
 > fieldset = fieldset' []
 
 <!ELEMENT legend %Inline;>     <!-- fieldset label -->
@@ -1344,10 +1349,10 @@
   accesskey   %Character;    #IMPLIED
   >
 
-> legend' :: Attrs -> XHtml InlineContent -> XHtml FieldSetContent 
+> legend' :: (Functor t, Monad t) => Attrs -> XHtmlT t InlineContent -> XHtmlT t FieldSetContent 
 > legend' = tellNode FieldSet "legend" []
 >
-> legend :: XHtml InlineContent -> XHtml FieldSetContent
+> legend :: (Functor t, Monad t) => XHtmlT t InlineContent -> XHtmlT t FieldSetContent
 > legend = legend' []
 
 <!--
@@ -1363,10 +1368,10 @@
   disabled    (disabled)     #IMPLIED
   >
 
-> button' :: Inline c => Attrs -> XHtml FlowContent -> XHtml c
+> button' :: (Functor t, Monad t, Inline c) => Attrs -> XHtmlT t FlowContent -> XHtmlT t c
 > button' = tellNode inline "button" []
 >
-> button :: Inline c => XHtml FlowContent -> XHtml c
+> button :: (Functor t, Monad t, Inline c) => XHtmlT t FlowContent -> XHtmlT t c
 > button = button' []
 
 > -- ======================= Tables =======================================-->
@@ -1431,82 +1436,82 @@
 <!ELEMENT table
      (caption?, (col*|colgroup*), thead?, tfoot?, (tbody+|tr+))>
 
-> table' :: Block c => Attrs -> XHtml Table1Content -> XHtml c
+> table' :: (Functor t, Monad t, Block c) => Attrs -> XHtmlT t Table1Content -> XHtmlT t c
 > table' = tellNode block "table" []
 > 
-> table :: Block c => XHtml Table1Content -> XHtml c
+> table :: (Functor t, Monad t, Block c) => XHtmlT t Table1Content -> XHtmlT t c
 > table = table' []
 
 <!ELEMENT caption  %Inline;>
 
-> caption' :: Attrs -> XHtml InlineContent -> XHtml Table1Content
+> caption' :: (Functor t, Monad t) => Attrs -> XHtmlT t InlineContent -> XHtmlT t Table1Content
 > caption' = tellNode Table1 "caption" []
 >
-> caption :: XHtml InlineContent -> XHtml Table1Content
+> caption :: (Functor t, Monad t) => XHtmlT t InlineContent -> XHtmlT t Table1Content
 > caption = caption' []
 
 <!ELEMENT thead    (tr)+>
 
-> thead' :: Attrs -> XHtml Table2Content -> XHtml Table1Content
+> thead' :: (Functor t, Monad t) => Attrs -> XHtmlT t Table2Content -> XHtmlT t Table1Content
 > thead' = tellNode Table1 "thead" []
 >
-> thead :: XHtml Table2Content -> XHtml Table1Content
+> thead :: (Functor t, Monad t) => XHtmlT t Table2Content -> XHtmlT t Table1Content
 > thead = thead' []
 
 <!ELEMENT tfoot    (tr)+>
 
-> tfoot' :: Attrs -> XHtml Table2Content -> XHtml Table1Content
+> tfoot' :: (Functor t, Monad t) => Attrs -> XHtmlT t Table2Content -> XHtmlT t Table1Content
 > tfoot' = tellNode Table1 "tfoot" []
 >
-> tfoot :: XHtml Table2Content -> XHtml Table1Content
+> tfoot :: (Functor t, Monad t) => XHtmlT t Table2Content -> XHtmlT t Table1Content
 > tfoot = tfoot' []
 
 <!ELEMENT tbody    (tr)+>
 
-> tbody' :: Attrs -> XHtml Table2Content -> XHtml Table1Content
+> tbody' :: (Functor t, Monad t) => Attrs -> XHtmlT t Table2Content -> XHtmlT t Table1Content
 > tbody' = tellNode Table1 "tbody" []
 >
-> tbody :: XHtml Table2Content -> XHtml Table1Content
+> tbody :: (Functor t, Monad t) => XHtmlT t Table2Content -> XHtmlT t Table1Content
 > tbody = tbody' []
 
 <!ELEMENT colgroup (col)*>
 
-> colgroup' :: Attrs -> XHtml TableColContent -> XHtml Table1Content
+> colgroup' :: (Functor t, Monad t) => Attrs -> XHtmlT t TableColContent -> XHtmlT t Table1Content
 > colgroup' = tellNode Table1 "colgroup" []
 >
-> colgroup :: XHtml TableColContent -> XHtml Table1Content
+> colgroup :: (Functor t, Monad t) => XHtmlT t TableColContent -> XHtmlT t Table1Content
 > colgroup = colgroup' []
 
 <!ELEMENT col      EMPTY>
 
-> col' :: Attrs -> XHtml TableColContent
+> col' :: (Functor t, Monad t) => Attrs -> XHtmlT t TableColContent
 > col' = tellEmptyNode TableCol "col" []
 >
-> col :: XHtml TableColContent
+> col :: (Functor t, Monad t) => XHtmlT t TableColContent
 > col = col' []
 
 <!ELEMENT tr       (th|td)+>
 
-> tr' :: Attrs -> XHtml Table3Content -> XHtml Table2Content
+> tr' :: (Functor t, Monad t) => Attrs -> XHtmlT t Table3Content -> XHtmlT t Table2Content
 > tr' = tellNode Table2 "tr" []
 > 
-> tr :: XHtml Table3Content -> XHtml Table2Content
+> tr :: (Functor t, Monad t) => XHtmlT t Table3Content -> XHtmlT t Table2Content
 > tr = tr' []
 
 <!ELEMENT th       %Flow;>
 
-> th' :: Attrs -> XHtml FlowContent -> XHtml Table3Content
+> th' :: (Functor t, Monad t) => Attrs -> XHtmlT t FlowContent -> XHtmlT t Table3Content
 > th' = tellNode Table3 "th" []
 >
-> th :: XHtml FlowContent -> XHtml Table3Content
+> th :: (Functor t, Monad t) => XHtmlT t FlowContent -> XHtmlT t Table3Content
 > th = th' []
 
 <!ELEMENT td       %Flow;>
 
-> td' :: Attrs -> XHtml FlowContent -> XHtml Table3Content
+> td' :: (Functor t, Monad t) => Attrs -> XHtmlT t FlowContent -> XHtmlT t Table3Content
 > td' = tellNode Table3 "td" []
 >
-> td :: XHtml FlowContent -> XHtml Table3Content
+> td :: (Functor t, Monad t) => XHtmlT t FlowContent -> XHtmlT t Table3Content
 > td = td' []
 
 <!ATTLIST table

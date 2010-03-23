@@ -16,7 +16,7 @@ build-type: Simple
 
 library
   build-Depends: 
-    base < 5, containers, mtl, xml >= 1.3.5, text >= 0.7
+    base < 5, containers, random, transformers, xml >= 1.3.5, text >= 0.7
   hs-source-dirs: src
   exposed-modules: 
     Text.XHtmlCombinators
@@ -24,5 +24,6 @@ library
     Text.XHtmlCombinators.Combinators
     Text.XHtmlCombinators.Render
     Text.XHtmlCombinators.Attributes
+    Text.XHtmlCombinators.Extras.Lorem
   extensions: OverloadedStrings, PatternGuards
   ghc-options: -O2

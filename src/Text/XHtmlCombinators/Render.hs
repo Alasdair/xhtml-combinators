@@ -1,10 +1,14 @@
+{-# LANGUAGE PackageImports #-}
 module Text.XHtmlCombinators.Render 
     ( render, renderPretty
+    , renderT, renderPrettyT
     ) where
 
 import Control.Applicative hiding (empty)
+import Control.Monad.Identity
 import Data.Foldable
 import qualified Data.Sequence as Seq
+
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -36,8 +40,10 @@ renderNode (Node name rattrs attrs c)
 -- 
 -- This function will render the entire page on a single line, which
 -- is somewhat unreadable. On the plus side, it's relatively fast.
-render :: Content c => XHtml c -> Text
-render page = fold $ renderNode . toContent <$> execXHtml page
+renderT :: (Functor t, Monad t, Content c) => XHtmlT t c -> t Text
+renderT page = do
+    content <- execXHtml page
+    return (fold $ renderNode . toContent <$> content)
 
 -- | Renders a pretty xhtml page with readable indentation.
 -- 
@@ -48,5 +54,13 @@ render page = fold $ renderNode . toContent <$> execXHtml page
 -- 
 -- Also, 'Text.XML.Light' will render the document as proper XML, which is 
 -- fine only if you're not trying to pass of your page as text/html.
+renderPrettyT :: (Functor t, Monad t, Content c) => XHtmlT t c -> t Text
+renderPrettyT page = do
+    content <- renderT page
+    return (T.pack . unlines . fmap XML.ppContent . XML.parseXML . T.unpack $ content)
+
+render :: Content c => XHtml c -> Text
+render = runIdentity . renderT
+
 renderPretty :: Content c => XHtml c -> Text
-renderPretty = T.pack . unlines . fmap XML.ppContent . XML.parseXML . T.unpack . render
+renderPretty = runIdentity . renderPrettyT

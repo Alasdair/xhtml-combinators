@@ -1,9 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
+import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
 import Text.XHtmlCombinators
 import Text.XHtmlCombinators.Render
 import qualified Text.XHtmlCombinators.Attributes as A
-import Data.Text (Text)
-import qualified Data.Text as T
+import Text.XHtmlCombinators.Extras.Lorem
 
 tut1 :: XHtml Page
 tut1 = html True $ do
@@ -21,6 +24,7 @@ tut2 = html True $ do
 pre' :: Block c => Attrs -> XHtml InlineContent -> XHtml c
 -}
 
+tut2 :: XHtml Page
 tut2 = html True $ do
     head_ $ title "Example 2"
     body $ do
@@ -40,3 +44,11 @@ tut2 = html True $ do
 
 favs :: [Text]
 favs = ["Cookies", "Cider", "Cthulu"]
+
+tut3 :: XHtmlT IO Page
+tut3 = html True $ do
+    head_ $ title "Example 3"
+    body $ do
+        loremIO
+        loremIO' [A.style "color: blue;"]
+        loremIO
