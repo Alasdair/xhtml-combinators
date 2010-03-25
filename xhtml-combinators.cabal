@@ -24,6 +24,8 @@ library
     Text.XHtmlCombinators.Combinators
     Text.XHtmlCombinators.Render
     Text.XHtmlCombinators.Attributes
+    Text.XHtmlCombinators.Escape
+    Text.XHtmlCombinators.Safe
     Text.XHtmlCombinators.Extras.Lorem
   extensions: OverloadedStrings, PatternGuards
   ghc-options: -O2

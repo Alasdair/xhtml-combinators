@@ -1,4 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
+
+-- |
+-- Module      : Text.XHtmlCombinators
+-- Copyright   : (c) Andy Gill, and the Oregon Graduate Institute of Science and Technology 1999-2001
+--               (c) Bjorn Bringert 2004-2006
+--               (c) Alasdair Armstrong 2010
+-- License     : BSD-style
+-- Maintainer  : alasdair.armstrong@googlemail.com
+-- Stability   : experimental
+-- Portability : GHC
+
 module Text.XHtmlCombinators.Attributes where
 
 import Data.Text (Text)

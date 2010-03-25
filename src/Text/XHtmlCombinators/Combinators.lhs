@@ -1,19 +1,23 @@
-> {-# LANGUAGE OverloadedStrings #-}
+> {-# LANGUAGE OverloadedStrings, FlexibleInstances #-}
+
+> -- |
+> -- Module      : Text.XHtmlCombinators.Combinators
+> -- Copyright   : (c) Alasdair Armstrong 2010
+> -- License     : BSD-style
+> -- Maintainer  : alasdair.armstrong@googlemail.com
+> -- Stability   : experimental
+> -- Portability : GHC
+>
 > module Text.XHtmlCombinators.Combinators where
 >
 > import Control.Applicative hiding (empty)
+> import Data.Sequence (Seq)
 > import qualified Data.Sequence as Seq
 >
 > import Data.Text (Text)
 > import qualified Data.Text as T
 >
 > import Text.XHtmlCombinators.Internal
-
-> -- Currently each element definition requires about 5 lines of
-> -- code, which is quite a lot of boilerplate.
-> --
-> -- In the future it might be better to use template Haskell or
-> -- even a little shell script to generate them.
 
 <!--
    Extensible HTML version 1.0 Strict DTD
@@ -457,7 +461,7 @@
 
 > style' :: (Functor t, Monad t) => Text -- ^ Required type attribute.
 >        -> Attrs -> Text -> XHtmlT t HeadContent
-> style' sType = tellTextNode Head "style" [Attr "type" sType]
+> style' type_ = tellTextNode Head "style" [Attr "type" type_]
 >
 > style :: (Functor t, Monad t) => Text -> Text -> XHtmlT t HeadContent
 > style = flip style' []
@@ -476,7 +480,7 @@
 > script' :: (Functor t, Monad t) 
 >         => Text -- ^ Required type attribute.
 >         -> Attrs -> Text -> XHtmlT t HeadContent
-> script' sType = tellTextNode Head "script" [Attr "type" sType]
+> script' type_ = tellTextNode Head "script" [Attr "type" type_]
 >
 > script :: (Functor t, Monad t) => Text -> Text -> XHtmlT t HeadContent
 > script = flip script' []

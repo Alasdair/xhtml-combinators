@@ -10,8 +10,8 @@ import Text.XHtmlCombinators.Extras.Lorem
 
 tut1 :: XHtml Page
 tut1 = html True $ do
-         head_ $ title "Example 1"
-         body $ p (text "Hello, World")
+    head_ $ title "Example 1"
+    body $ p (text "Hello, World")
 
 {-
 tut2 :: XHtml Page

@@ -1,4 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
+
+-- |
+-- Module      : Text.XHtmlCombinators
+-- Copyright   : (c) Alasdair Armstrong 2010
+-- License     : BSD-style
+-- Maintainer  : alasdair.armstrong@googlemail.com
+-- Stability   : experimental
+-- Portability : GHC
+
 module Text.XHtmlCombinators.Extras.Lorem
     ( lorem', lorem
     , loremIO', loremIO

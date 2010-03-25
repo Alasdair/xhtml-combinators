@@ -1,10 +1,18 @@
+-- |
+-- Module      : Text.XHtmlCombinators
+-- Copyright   : (c) Alasdair Armstrong 2010
+-- License     : BSD-style
+-- Maintainer  : alasdair.armstrong@googlemail.com
+-- Stability   : experimental
+-- Portability : GHC
+
 module Text.XHtmlCombinators
     ( -- * Types
       -- ** XHtml
       XHtmlMT, XHtmlT, XHtml
     , Page
-    , Content
-    , Attrs, Attr (Attr)
+    , Content, CData
+    , Attrs, Attr
       -- ** Element Types
     , TopLevelContent
     , HeadContent
@@ -18,6 +26,7 @@ module Text.XHtmlCombinators
     , ListContent, DefinitionListContent
       -- *** Field Element Types
     , FieldSetContent
+    , OptionContent
       -- *** Table Element Types
     , Table1Content, Table2Content, Table3Content
     , TableColContent

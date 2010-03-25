@@ -1,3 +1,11 @@
+-- |
+-- Module      : Text.XHtmlCombinators
+-- Copyright   : (c) Alasdair Armstrong 2010
+-- License     : BSD-style
+-- Maintainer  : alasdair.armstrong@googlemail.com
+-- Stability   : experimental
+-- Portability : GHC
+
 module Text.XHtmlCombinators.Render 
     ( render, renderPretty
     , renderT, renderPrettyT

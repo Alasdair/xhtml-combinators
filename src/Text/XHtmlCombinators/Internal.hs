@@ -1,4 +1,13 @@
 {-# LANGUAGE PatternGuards #-}
+
+-- |
+-- Module      : Text.XHtmlCombinators
+-- Copyright   : (c) Alasdair Armstrong 2010
+-- License     : BSD-style
+-- Maintainer  : alasdair.armstrong@googlemail.com
+-- Stability   : experimental
+-- Portability : GHC
+
 module Text.XHtmlCombinators.Internal where
 
 import Control.Applicative
@@ -11,6 +20,7 @@ import qualified Data.Sequence as Seq
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import GHC.Exts (IsString (..))
 
 type Attrs = [Attr]
 
