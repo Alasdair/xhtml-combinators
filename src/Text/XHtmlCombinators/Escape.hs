@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, PatternGuards #-}
 
 -- | 
--- Module      : Text.XHtmlCombinators
+-- Module      : Text.XHtmlCombinators.Escape
 -- Copyright   : (c) Jasper Van der Jeugt 2009,
 --               (c) Alasdair Armstrong 2010
 -- License     : BSD-style

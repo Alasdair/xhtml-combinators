@@ -1,7 +1,7 @@
 {-# LANGUAGE PatternGuards #-}
 
 -- |
--- Module      : Text.XHtmlCombinators
+-- Module      : Text.XHtmlCombinators.Internal
 -- Copyright   : (c) Alasdair Armstrong 2010
 -- License     : BSD-style
 -- Maintainer  : alasdair.armstrong@googlemail.com

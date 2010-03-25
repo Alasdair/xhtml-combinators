@@ -1,5 +1,5 @@
 -- |
--- Module      : Text.XHtmlCombinators.Combinators
+-- Module      : Text.XHtmlCombinators.Safe
 -- Copyright   : (c) Alasdair Armstrong 2010
 -- License     : BSD-style
 -- Maintainer  : alasdair.armstrong@googlemail.com
@@ -44,6 +44,8 @@ import Text.XHtmlCombinators hiding
     , option', option
     , textarea', textarea
     )
+
+-- TODO: Comment these explaining how escaping is applied.
 
 text :: (Functor t, Monad t, CData c) => Text -> XHtmlT t c
 text = X.text . escape

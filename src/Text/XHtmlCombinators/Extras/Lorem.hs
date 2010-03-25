@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- |
--- Module      : Text.XHtmlCombinators
+-- Module      : Text.XHtmlCombinators.Extras.Lorem
 -- Copyright   : (c) Alasdair Armstrong 2010
 -- License     : BSD-style
 -- Maintainer  : alasdair.armstrong@googlemail.com
