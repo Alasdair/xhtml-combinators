@@ -10,6 +10,7 @@ xhtml-combinators is a (hopefully) fast and easy to use set of xhtml combinators
 
 The following basic example shows how it all fits together. For more see doc/examples.lhs
 
+    example1 :: XHtml Page
     example1 = html True $ do
         head_ $ title "Example 1"
         body $ p (text "Hello, World!")
