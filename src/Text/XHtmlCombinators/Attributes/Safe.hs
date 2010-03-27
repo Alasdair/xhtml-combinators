@@ -12,11 +12,17 @@
 
 module Text.XHtmlCombinators.Attributes.Safe where
 
+import Data.Char (isAsciiLower)
+
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Text.XHtmlCombinators.Internal (Attr)
+import Text.XHtmlCombinators.Internal (Attr (Attr))
+import Text.XHtmlCombinators.Escape
 import Text.XHtmlCombinators.Attributes.Internal.Safe
+
+attr :: Text -> Text -> Attr
+attr name = Attr (T.filter isAsciiLower name) . escapeAttr
 
 -- the following was copied almost verbatim from Bjorn Bringert's xhtml library.
 -- See: http://hackage.haskell.org/package/xhtml
@@ -113,10 +119,15 @@ size        =  textAttr "size"
 src         =  textAttr "src"
 class_      =  textAttr "class"
 for         =  textAttr "for"
-style       =  textAttr "style"
+--style       =  textAttr "style"
 type_       =  textAttr "type"
 title       =  textAttr "title"
 usemap      =  textAttr "usemap"
 valign      =  textAttr "valign"
 value       =  textAttr "value"
 width       =  textAttr "width"
+
+-- |
+-- Currently data input into the style tag is not
+-- escaped.
+style = Attr "style"

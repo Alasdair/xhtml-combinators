@@ -15,8 +15,11 @@ module Text.XHtmlCombinators.Attributes where
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Text.XHtmlCombinators.Internal (Attr)
+import Text.XHtmlCombinators.Internal (Attr (Attr))
 import Text.XHtmlCombinators.Attributes.Internal
+
+attr :: Text -> Text -> Attr
+attr = Attr
 
 -- the following was copied almost verbatim from Bjorn Bringert's xhtml library.
 -- See: http://hackage.haskell.org/package/xhtml

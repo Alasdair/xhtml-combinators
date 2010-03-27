@@ -19,10 +19,10 @@ import Text.XHtmlCombinators.Internal
 import Text.XHtmlCombinators.Escape
 
 emptyAttr :: Text -> Attr
-emptyAttr name = Attr name (escape name)
+emptyAttr name = Attr name (escapeAttr name)
 
 intAttr :: Text -> Int -> Attr
 intAttr name = Attr name . T.pack . show
 
 textAttr :: Text -> Text -> Attr
-textAttr name = Attr name . escape
+textAttr name = Attr name . escapeAttr

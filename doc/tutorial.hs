@@ -3,9 +3,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
-import Text.XHtmlCombinators
+import Text.XHtmlCombinators.Safe
 import Text.XHtmlCombinators.Render
-import qualified Text.XHtmlCombinators.Attributes as A
+import qualified Text.XHtmlCombinators.Attributes.Safe as A
 import Text.XHtmlCombinators.Extras.Lorem
 
 tut1 :: XHtml Page
