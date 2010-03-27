@@ -1,5 +1,5 @@
 name: xhtml-combinators
-version: 0.2
+version: 0.2.1
 cabal-version: >= 1.2.3
 synopsis: Fast and easy to use XHTML combinators.
 description: 
