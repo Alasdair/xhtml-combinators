@@ -15,7 +15,7 @@ module Text.XHtmlCombinators.Extras.Lorem
 
 import Control.Applicative
 import Control.Monad
-import Control.Monad.Trans
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
 import Data.Monoid

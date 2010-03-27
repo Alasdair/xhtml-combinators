@@ -12,8 +12,8 @@ module Text.XHtmlCombinators.Render
     ) where
 
 import Control.Applicative hiding (empty)
-import Control.Monad.Identity
 import Data.Foldable
+import Data.Functor.Identity
 import qualified Data.Sequence as Seq
 
 import Data.Text (Text)

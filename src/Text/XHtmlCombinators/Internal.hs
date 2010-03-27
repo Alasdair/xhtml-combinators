@@ -12,9 +12,9 @@ module Text.XHtmlCombinators.Internal where
 
 import Control.Applicative
 import Control.Monad
-import Control.Monad.Identity
-import Control.Monad.Trans
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.Writer
+import Data.Functor.Identity
 import Data.Sequence
 import qualified Data.Sequence as Seq
 
