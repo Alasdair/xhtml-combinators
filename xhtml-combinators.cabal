@@ -20,12 +20,16 @@ library
   hs-source-dirs: src
   exposed-modules: 
     Text.XHtmlCombinators
+    Text.XHtmlCombinators.Safe
+    Text.XHtmlCombinators.Attributes
+    Text.XHtmlCombinators.Attributes.Safe
+    Text.XHtmlCombinators.Escape
+    Text.XHtmlCombinators.Render
+    Text.XHtmlCombinators.Extras.Lorem
+  other-modules:
     Text.XHtmlCombinators.Internal
     Text.XHtmlCombinators.Combinators
-    Text.XHtmlCombinators.Render
-    Text.XHtmlCombinators.Attributes
-    Text.XHtmlCombinators.Escape
-    Text.XHtmlCombinators.Safe
-    Text.XHtmlCombinators.Extras.Lorem
+    Text.XHtmlCombinators.Attributes.Internal
+    Text.XHtmlCombinators.Attributes.Internal.Safe
   extensions: OverloadedStrings, PatternGuards
   ghc-options: -O2

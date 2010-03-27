@@ -10,13 +10,13 @@
 -- Stability   : experimental
 -- Portability : GHC
 
-module Text.XHtmlCombinators.Attributes where
+module Text.XHtmlCombinators.Attributes.Safe where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 
 import Text.XHtmlCombinators.Internal (Attr)
-import Text.XHtmlCombinators.Attributes.Internal
+import Text.XHtmlCombinators.Attributes.Internal.Safe
 
 -- the following was copied almost verbatim from Bjorn Bringert's xhtml library.
 -- See: http://hackage.haskell.org/package/xhtml
