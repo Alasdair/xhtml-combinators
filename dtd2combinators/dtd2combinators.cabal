@@ -1,0 +1,20 @@
+name: dtd2combinators
+version: 0.0
+cabal-version: >= 1.2.3
+synopsis: Automatically turn a DTD into a set of combinators for building XML documents.
+description: 
+  dtd2combinators turns a DTD into combinators which can be used to build XML documents
+  that conform to the DTD.
+category: XML
+license: BSD3
+license-file: LICENSE
+author: Alasdair Armstrong
+maintainer: alasdair.armstrong@googlemail.com
+build-type: Simple
+
+executable dtd2c
+  build-depends: 
+    base < 5, containers, random, text >= 0.7, HaXml >= 1.20.2
+  hs-source-dirs: src
+  main-is: Main.hs
+  extensions: PatternGuards
