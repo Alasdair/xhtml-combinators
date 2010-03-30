@@ -12,6 +12,9 @@ import qualified Data.Map as Map
 import Data.Maybe
 import Data.Set (Set)
 import qualified Data.Set as Set
+import System.Environment (getArgs)
+import System.Directory (createDirectoryIfMissing)
+import System.IO
 
 import DTD2Combinators.HaXml
 import qualified DTD2Combinators.SrcGen as Src
@@ -25,6 +28,9 @@ data ElemGroup e = ElemGroup
     , groupElems :: [e] 
     } deriving (Show)
 
+elemNames :: [ElemGroup Element] -> [String]
+elemNames groups = map elemName $ concatMap groupElems groups
+
 instance Functor ElemGroup where
     fmap f group = group { groupElems = map f $ groupElems group }
 
@@ -33,7 +39,11 @@ data GroupName = TextGroup
                | NamedGroup String
                deriving (Eq, Show)
 
-ppName group = (\(NamedGroup str) -> str) $ groupName group
+
+groupNames :: [ElemGroup e] -> [String]
+groupNames = mapMaybe gname . map groupName
+    where gname (NamedGroup n) = Just n
+          gname _ = Nothing
 
 mkGroups :: [Element] -> IO [ElemGroup Element]
 mkGroups elems = do
@@ -135,16 +145,43 @@ toGroup prefix group
   where 
     cs = map (toCombinator prefix group) (groupElems group)
 
-test :: String -> FilePath -> IO String
-test prefix dtd = do
+toFile :: String -> String -> String -> [ElemGroup Element] -> Src.CombinatorFile
+toFile prefix modPath modName groups = Src.CombinatorFile
+    { Src.fileMod = Src.Module modPath modName exports
+    , Src.fileClasses = classes prefix nst
+    , Src.fileGroups = map (toGroup prefix) sng
+    }
+  where
+    nst = nesting groups
+    sng = singularize prefix nst
+
+    classNames = fst <$> classes prefix nst
+    
+    exports = classNames ++ map (++ "Content") (groupNames groups) ++ elemNames groups
+
+toAttrFile :: String -> String -> [Element] -> Src.AttrFile
+toAttrFile modPath modName elems = 
+    Src.AttrFile modPath modName (attrName <$> allAttrs elems)
+
+main :: IO ()
+main = do
+    hSetBuffering stdout NoBuffering
+
+    (dtd:_) <- getArgs
+
+    putStr "Enter the class prefix (usually XHtml or XML)\n> "
+    prefix <- getLine
+    putStr "Input module path (e.g. Text.XHtmlCombinators)\n> "
+    modPath <- getLine
+    putStr "Enter module name\n> "
+    modName <- getLine
+
     (Right elems) <- readDTD dtd
     groups <- mkGroups elems
 
-    let nst = nesting groups
-        sng = singularize prefix nst
+    let cfile = Src.combinatorFile $ toFile prefix modPath modName groups
+        afile = Src.attrFile $ toAttrFile modPath modName elems
 
-    return $ concat [ Src.classes (classes prefix nst)
-                    , concat $ intersperse "\n\n" $ map (Src.group . toGroup prefix) sng
-                    ]
-
-main = test "XML" "../dtds/mmlents/mathml.dtd" >>= writeFile "out"
+    writeFile (modName ++ ".hs") cfile
+    createDirectoryIfMissing False modName
+    writeFile (modName ++ "/Attributes.hs") afile

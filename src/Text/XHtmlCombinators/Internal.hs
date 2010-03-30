@@ -33,7 +33,7 @@ data Node = Node Text Attrs Attrs (Seq Node)
 class CData c where
     cdata :: Text -> c
 
-text :: (Functor t, Monad t, CData c) => Text -> XhtmlT t c
+text :: (Functor t, Monad t, CData c) => Text -> XHtmlT t c
 text = tellS . cdata
 
 class Content e where

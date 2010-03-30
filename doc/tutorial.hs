@@ -3,13 +3,13 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
-import Text.XHtmlCombinators.Safe
+import Text.XHtmlCombinators.Internal
+import Text.XHtmlCombinators.Strict
 import Text.XHtmlCombinators.Render
-import qualified Text.XHtmlCombinators.Attributes.Safe as A
-import Text.XHtmlCombinators.Extras.Lorem
+import qualified Text.XHtmlCombinators.Strict.Attributes as A
 
-tut1 :: XHtml Page
-tut1 = html True $ do
+tut1 :: XHtml Root
+tut1 = html $ do
     head_ $ title "Example 1"
     body $ p (text "Hello, World")
 
@@ -24,8 +24,8 @@ tut2 = html True $ do
 pre' :: Block c => Attrs -> XHtml InlineContent -> XHtml c
 -}
 
-tut2 :: XHtml Page
-tut2 = html True $ do
+tut2 :: XHtml Root
+tut2 = html $ do
     head_ $ title "Example 2"
     body $ do
         h2 (text "Example 2")
@@ -44,11 +44,3 @@ tut2 = html True $ do
 
 favs :: [Text]
 favs = ["Cookies", "Cider", "Cthulu"]
-
-tut3 :: XHtmlT IO Page
-tut3 = html True $ do
-    head_ $ title "Example 3"
-    body $ do
-        loremIO
-        loremIO' [A.style "color: blue;"]
-        loremIO
