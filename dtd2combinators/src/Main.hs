@@ -6,86 +6,15 @@ import Control.Arrow ((&&&))
 import Control.Monad
 import Data.Char (toUpper, toLower)
 import Data.Function (on)
-import Data.List (find, nub, nubBy)
+import Data.List (find, nub, nubBy, intersperse)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Set (Set)
 import qualified Data.Set as Set
 
-import qualified Text.XML.HaXml as XML
-import qualified Text.XML.HaXml.Parse as XML (dtdParse') 
-
-data Element = Elem 
-    { name :: String
-    , contentSpec :: ContentSpec
-    , attrs :: [Attr]
-    } deriving (Show)
-
-data Attr = Attr String Default deriving (Eq, Show)
-
-data Default = Implied
-             | Required
-             | Fixed String
-             | Default String
-             deriving (Eq, Show)
-
-data ContentSpec = Empty 
-                 | Any
-                 | CS Bool (Set String) 
-                 deriving (Eq, Show)
-
-toElement :: XML.DocTypeDecl -> XML.MarkupDecl -> Maybe Element
-toElement dtd (XML.Element (XML.ElementDecl name xmlcs)) =
-    Just $ Elem name (toContentSpec xmlcs) (findAttrs dtd name)
-toElement _ _ = Nothing
-
--- | Convert a HaXml ContentSpec type to our ContentSpec type.
-toContentSpec :: XML.ContentSpec -> ContentSpec
-toContentSpec XML.EMPTY = Empty
-toContentSpec XML.ANY = Any
-toContentSpec (XML.Mixed XML.PCDATA) = CS True (Set.empty)
-toContentSpec (XML.Mixed (XML.PCDATAplus names)) = CS True (Set.fromList names)
-toContentSpec (XML.ContentSpec cp) = CS False (Set.fromList (cpToList cp))
-    where cpToList (XML.TagName name _) = [name]
-          cpToList (XML.Choice cps _) = cpToList =<< cps
-          cpToList (XML.Seq cps _) = cpToList =<< cps
-
-findAttrs :: XML.DocTypeDecl -> String -> [Attr]
-findAttrs (XML.DTD _ _ decls) name
-    | Just (XML.AttList attList) <- find attrByName decls
-    = toAttrs attList
-    | otherwise = []
-    where attrByName :: XML.MarkupDecl -> Bool
-          attrByName (XML.AttList (XML.AttListDecl n _)) = n == name
-          attrByName _ = False
-
-toAttrs :: XML.AttListDecl -> [Attr]
-toAttrs (XML.AttListDecl _ attrDefs) = map toAttr attrDefs 
-    where toAttr :: XML.AttDef -> Attr
-          toAttr (XML.AttDef name _ XML.IMPLIED) = Attr name Implied
-          toAttr (XML.AttDef name _ XML.REQUIRED) = Attr name Required
-          toAttr (XML.AttDef name _ (XML.DefaultTo attVal (Just XML.FIXED))) = 
-              Attr name (Fixed (show attVal)) 
-              -- Not sure just showing attVal is really the right thing to do...
-          toAttr (XML.AttDef name _ (XML.DefaultTo attVal Nothing)) = 
-              Attr name (Default (show attVal))
-
-canAppearIn :: String -> [Element] -> [Element]
-canAppearIn = filter . contentSpecContains
-    where contentSpecContains str (Elem _ (CS _ set) _) = str `Set.member` set
-          contentSpecContains str _ = False
-
-elements :: XML.DocTypeDecl -> [Element]
-elements dtd@(XML.DTD _ _ decls) = mapMaybe (toElement dtd) decls
-
-readDTD :: FilePath -> IO (Either String [Element])
-readDTD path = do
-    dtd <- readFile path
-    return $ case XML.dtdParse' path dtd of
-        Right Nothing  -> Left ("No DTD found at " ++ path)
-        Right (Just d) -> Right (elements d)
-        Left str       -> Left str
+import DTD2Combinators.HaXml
+import qualified DTD2Combinators.SrcGen as Src
 
 allAttrs :: [Element] -> [Attr]
 allAttrs = nub . concatMap (\(Elem _ _ attrs) -> attrs)
@@ -108,8 +37,8 @@ ppName group = (\(NamedGroup str) -> str) $ groupName group
 
 mkGroups :: [Element] -> IO [ElemGroup Element]
 mkGroups elems = do
-    let uniqueContentSpecs = contentSpec <$> nubBy ((==) `on` contentSpec) elems
-        equalsSpec spec = filter (\elem -> contentSpec elem == spec) elems 
+    let uniqueContentSpecs = elemContentSpec <$> nubBy ((==) `on` elemContentSpec) elems
+        equalsSpec spec = filter (\elem -> elemContentSpec elem == spec) elems 
         groups = map equalsSpec uniqueContentSpecs
 
     groups' <- forM groups $ \elems -> do
@@ -119,7 +48,7 @@ mkGroups elems = do
               | isEmptyGroup elems -> return $ ElemGroup False EmptyGroup elems
               | otherwise -> do
                   putStrLn "Group contains the following:"
-                  mapM_ (putStrLn . name) elems
+                  mapM_ (putStrLn . elemName) elems
                   putStr "What do you want to call it?\n> "
                   name <- capitalize <$> getLine
                   return $ ElemGroup (allowsText (head elems)) (NamedGroup name) elems
@@ -128,7 +57,7 @@ mkGroups elems = do
   where
     allowsText (Elem _ (CS b _) _) = b
 
-    mkName = NamedGroup . capitalize . name
+    mkName = NamedGroup . capitalize . elemName
 
 isTextGroup ((Elem _ (CS True set) _):_) = Set.null set
 isTextGroup _ = False
@@ -140,7 +69,7 @@ capitalize :: String -> String
 capitalize (c:cs) = toUpper c : cs
 
 groupContentSpec :: ElemGroup Element -> ContentSpec
-groupContentSpec = contentSpec . head . groupElems
+groupContentSpec = elemContentSpec . head . groupElems
 
 canBeNestedIn :: String -> [ElemGroup Element] -> [GroupName]
 canBeNestedIn elem = map groupName . filter inContentSpec
@@ -153,8 +82,12 @@ data Nested c = Root Element
               | Class Element c
               deriving (Show)
 
+element (Root e) = e
+element (Concrete e _) = e
+element (Class e _) = e
+
 nest :: [ElemGroup Element] -> Element -> Nested [String]
-nest groups elem = case name elem `canBeNestedIn` groups of
+nest groups elem = case elemName elem `canBeNestedIn` groups of
                        [] -> Root elem
                        [NamedGroup groupName] -> Concrete elem groupName
                        groupNames -> Class elem $ map (\(NamedGroup n) -> n) groupNames
@@ -177,59 +110,41 @@ singularize prefix groups = fmap singularizeClass <$> groups
           singularizeClass (Concrete elem str) = Concrete elem str
           singularizeClass (Root elem) = Root elem
 
--- The following is pretty ugly, there must be a better way of doing it.
+toCombinator :: String -> ElemGroup (Nested String) -> Nested String -> Src.Combinator
+toCombinator prefix group comb = Src.Combinator
+    { Src.name = elemName . element $ comb
+    , Src.prefix = prefix
+    , Src.typeSig = (typeG, typeR)
+    , Src.required = required
+    , Src.fixed = [] -- TODO: handle fixed attrs
+    }
+  where typeG | TextGroup <- groupName group = Src.Text
+              | EmptyGroup <- groupName group = Src.Empty
+              | NamedGroup n <- groupName group = Src.Group n
 
-ppClass :: (String, [String]) -> String
-ppClass (className, instances) = unlines
-    [ "class " ++ className ++ " c where"
-    , "    " ++ map toLower className ++ " :: Node -> c"
-    , ""
-    , unlines (map instanceDec instances)
-    ]
-  where instanceDec i = "instance " ++ className ++ " " ++ i 
-                        ++ "Content where " ++ map toLower className
-                        ++ " = " ++ i
+        typeR | Root _ <- comb = Src.Root
+              | Concrete _ t <- comb = Src.Concrete t
+              | Class _ c <- comb = Src.Class c
 
-ppClasses :: [(String, [String])] -> String
-ppClasses = concatMap ppClass
+        required = attrName <$> filter isRequired (elemAttrs (element comb))
 
-ppCombinator :: ElemGroup (Nested String) -> Nested String -> String
-ppCombinator group (Root elem) = unlines
-    [ name elem ++ "' :: (Functor t, Monad t) => Attrs -> XHtmlT t " ++ ppName group ++ "Content -> XHtmlT t Root"
-    , name elem ++ "' = tellNode Root \"" ++ name elem ++ "\" []"
-    , ""
-    , name elem ++ " :: (Functor t, Monad t) => XHtmlT t " ++ ppName group ++ "Content -> XHtmlT t Root"
-    , name elem ++ " = " ++ name elem ++ "' []"
-    ]
-ppCombinator group (Concrete elem conc) = unlines
-    [ name elem ++ "' :: (Functor t, Monad t) => Attrs -> XHtmlT t " ++ ppName group ++ "Content -> XHtmlT t " ++ conc ++ "Content"
-    , name elem ++ "' = tellNode " ++ conc ++ " \"" ++ name elem ++ "\" []"
-    , ""
-    , name elem ++ " :: (Functor t, Monad t) => XHtmlT t " ++ ppName group ++ "Content -> XHtmlT t " ++ conc ++ "Content"
-    , name elem ++ " = " ++ name elem ++ "' []"
-    ]
-ppCombinator group (Class elem cls) = unlines
-    [ name elem ++ "' :: (Functor t, Monad t, " ++ cls ++ " c) => Attrs -> XHtmlT t " ++ ppName group ++ "Content -> XHtmlT t c"
-    , name elem ++ "' = tellNode " ++ map toLower cls ++ " \"" ++ name elem ++ "\" []"
-    , ""
-    , name elem ++ " :: (Functor t, Monad t, " ++ cls ++ " c) => XHtmlT t " ++ ppName group ++ "Content -> XHtmlT t c"
-    , name elem ++ " = " ++ name elem ++ "' []"
-    ]
+toGroup :: String -> ElemGroup (Nested String) -> Src.Group
+toGroup prefix group
+    | (NamedGroup n) <- groupName group = Src.ContentType n (groupAllowsText group) cs
+    | otherwise = Src.JustCombinators cs
+  where 
+    cs = map (toCombinator prefix group) (groupElems group)
 
-ppElemGroup :: ElemGroup (Nested String) -> String
-ppElemGroup group
-    | groupName group == TextGroup = ""
-    | groupName group == EmptyGroup = ""
-    | otherwise = unlines
-        [ "newtype " ++ ppName group ++ "Content = " ++ ppName group ++ " { " ++ map toLower (ppName group) ++ "ToNode :: Node }"
-        , ""
-        , "instance Content " ++ ppName group ++ "Content where"
-        , "    toContent = " ++ map toLower (ppName group) ++ "ToNode"
-        , if groupAllowsText group 
-          then unlines [ ""
-                       , "instance CData " ++ ppName group ++ "Content where"
-                       , "    cdata = " ++ ppName group ++ " . TextNode"
-                       ]
-          else ""
-        , unlines . map (ppCombinator group) $ groupElems group
-        ]
+test :: String -> FilePath -> IO String
+test prefix dtd = do
+    (Right elems) <- readDTD dtd
+    groups <- mkGroups elems
+
+    let nst = nesting groups
+        sng = singularize prefix nst
+
+    return $ concat [ Src.classes (classes prefix nst)
+                    , concat $ intersperse "\n\n" $ map (Src.group . toGroup prefix) sng
+                    ]
+
+main = test "XML" "../dtds/mmlents/mathml.dtd" >>= writeFile "out"
