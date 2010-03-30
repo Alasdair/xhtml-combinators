@@ -28,11 +28,20 @@ data Attr = Attr Text Text deriving (Show)
 
 data Node = Node Text Attrs Attrs (Seq Node)
           | TextNode Text
-          | WithAttrs Attrs
           deriving (Show)
+
+class CData c where
+    cdata :: Text -> c
+
+text :: (Functor t, Monad t, CData c) => Text -> XhtmlT t c
+text = tellS . cdata
 
 class Content e where
     toContent :: e -> Node
+
+newtype Root = Root { rootToNode :: Node }
+
+instance Content Root where toContent = rootToNode
 
 type XHtmlMT t x a = WriterT (Seq x) t a
 type XHtmlT t x = XHtmlMT t x ()
