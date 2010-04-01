@@ -6,10 +6,7 @@
 -- Stability   : experimental
 -- Portability : GHC
 
-module Text.XHtmlCombinators.Render 
-    ( render, renderPretty
-    , renderT, renderPrettyT
-    ) where
+module Text.XHtmlCombinators.Render where
 
 import Control.Applicative hiding (empty)
 import Data.Foldable
@@ -19,10 +16,11 @@ import qualified Data.Sequence as Seq
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import qualified Text.XML.Light as XML
+import qualified Data.Text.Encoding as T
 
 import Text.XHtmlCombinators.Internal
 
+{-
 lt = T.singleton '<'
 gt = T.singleton '>'
 space = T.singleton ' '
@@ -32,8 +30,6 @@ nl = T.singleton '\n'
 renderAttrs :: Attrs -> Text
 renderAttrs [] = T.empty
 renderAttrs attrs = T.concat (space : fmap renderAttr attrs)
-   where renderAttr (Attr name val) = 
-             T.concat [name, T.pack "=\"", val, T.pack "\""]
 
 renderNode (TextNode t) = t
 renderNode (Node name rattrs attrs c)
@@ -71,3 +67,26 @@ render = runIdentity . renderT
 
 renderPretty :: Content c => XHtml c -> Text
 renderPretty = runIdentity . renderPrettyT
+-}
+
+-- -----------------------------------------------------------------------------
+--  New renderer
+-- -----------------------------------------------------------------------------
+
+{-
+data Escaper e = Escaper
+    { escapeAttr :: Attr -> Attr
+    , escapeText :: Text -> Text
+    , childEscaper :: Text -> Escaper e
+    , encoder :: Text -> e
+    }
+
+unsafe :: Escaper Text
+unsafe = Escaper
+    { escapeAttr = id
+    , escapeText = id
+    , childEscaper = const unsafe
+    , encoder = id
+    }
+-}
+

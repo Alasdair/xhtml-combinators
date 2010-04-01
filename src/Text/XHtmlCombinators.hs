@@ -8,8 +8,6 @@
 
 module Text.XHtmlCombinators
     ( module Text.XHtmlCombinators.Strict
-      -- * Rendering
-    , render, renderT
     ) where
 
 import Text.XHtmlCombinators.Strict

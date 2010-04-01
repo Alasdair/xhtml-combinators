@@ -1,5 +1,5 @@
 name: xhtml-combinators
-version: 0.2.1
+version: 0.3
 cabal-version: >= 1.2.3
 synopsis: Fast and easy to use XHTML combinators.
 description: 
@@ -30,4 +30,3 @@ library
     Text.XHtmlCombinators.Internal
     Text.XHtmlCombinators.Render
   extensions: OverloadedStrings, PatternGuards
-  ghc-options: -O2

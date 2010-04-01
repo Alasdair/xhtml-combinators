@@ -11,16 +11,68 @@
 module Text.XHtmlCombinators.Internal where
 
 import Control.Applicative
+import qualified Control.Arrow as Arr
 import Control.Monad
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Writer
 import Data.Functor.Identity
+import Data.Monoid
 import Data.Sequence
 import qualified Data.Sequence as Seq
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Exts (IsString (..))
+
+data Settings = Settings
+    { metaSettings :: Maybe String }
+
+instance Monoid Settings where
+    mempty = Settings Nothing
+
+    s1 `mappend` s2 = Settings 
+        { metaSettings = metaSettings s1 `mappend` metaSettings s2 }
+
+-- The XHtmlMT monad transformer
+
+newtype XHtmlMT x t a = XHtmlMT
+    { unXHtmlMT :: WriterT (Seq x) (WriterT Settings t) a }
+
+instance Functor t => Functor (XHtmlMT x t) where
+    fmap f (XHtmlMT w) = XHtmlMT $ fmap f w
+
+instance Applicative t => Applicative (XHtmlMT x t) where
+    pure = XHtmlMT . pure
+
+    (<*>) = liftA2 id
+
+instance Monad t => Monad (XHtmlMT x t) where
+    return = XHtmlMT . return
+
+    (XHtmlMT w) >>= f = XHtmlMT $ w >>= unXHtmlMT . f
+
+instance MonadTrans (XHtmlMT x) where
+    lift = XHtmlMT . lift . lift
+
+tellS :: Monad t => x -> XHtmlMT x t ()
+tellS = XHtmlMT . tell . singleton
+
+execXHtmlMT :: Monad t => XHtmlMT x t () -> t (Seq x, Settings)
+execXHtmlMT = runWriterT . execWriterT . unXHtmlMT
+
+-- Some handy aliases
+
+type XHtmlT t x = XHtmlMT x t ()
+
+type XHtml x = XHtmlT Identity x
+
+empty :: Monad t => XHtmlT t x
+empty = return ()
+
+-- Setting settings
+
+set :: Monad t => Settings -> XHtmlT t x
+set = XHtmlMT . lift . tell
 
 type Attrs = [Attr]
 
@@ -43,30 +95,17 @@ newtype Root = Root { rootToNode :: Node }
 
 instance Content Root where toContent = rootToNode
 
-type XHtmlMT t x a = WriterT (Seq x) t a
-type XHtmlT t x = XHtmlMT t x ()
-
-type XHtml x = XHtmlT Identity x
-
-first :: Seq a -> a
-first seq | x :< _ <- viewl seq = x
-
 textNode :: Text -> Attrs -> Attrs -> Text -> Node
 textNode name rattrs attrs content = 
     Node name rattrs attrs (singleton (TextNode content))
 
 emptyNode :: Text -> Attrs -> Attrs -> Node
 emptyNode name rattrs attrs = Node name rattrs attrs Seq.empty
-                              
-node :: (Functor t, Monad t, Content e) => Text -> Attrs -> Attrs -> XHtmlT t e -> t Node
-node name rattrs attrs content = 
-    Node name rattrs attrs . fmap toContent <$> execXHtml content
 
-tellS :: Monad t => x -> XHtmlT t x
-tellS = tell . singleton
-
-execXHtml :: Monad t => XHtmlT t x -> t (Seq x)
-execXHtml = execWriterT
+node :: (Functor t, Monad t, Content e) => Text -> Attrs -> Attrs -> XHtmlT t e -> t (Node, Settings)
+node name rattrs attrs content = do
+    (nodes, settings) <- Arr.first (fmap toContent) <$> execXHtmlMT content
+    return (Node name rattrs attrs nodes, settings)
 
 tellTextNode :: Monad t => (Node -> e) -> Text -> Attrs -> Attrs -> Text -> XHtmlT t e 
 tellTextNode c name rattrs attrs = tellS . c . textNode name rattrs attrs
@@ -76,7 +115,10 @@ tellEmptyNode c name rattrs = tellS . c . emptyNode name rattrs
 
 tellNode :: (Functor t, Monad t, Content a) 
          => (Node -> b) -> Text -> Attrs -> Attrs -> XHtmlT t a -> XHtmlT t b
-tellNode c name rattrs attrs = tellS . c <=< lift . node name rattrs attrs
+tellNode c name rattrs attrs content = do
+    (n, settings) <- lift $ node name rattrs attrs content
+    set settings
+    tellS (c n)
 
-empty :: Monad t => XHtmlT t x
-empty = return ()
+first :: Seq a -> a
+first seq | x :< _ <- viewl seq = x

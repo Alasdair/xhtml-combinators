@@ -24,20 +24,19 @@ import System.Random
 import Data.Text (Text)
 import qualified Data.Text as T
 
+import Text.XHtmlCombinators
 import Text.XHtmlCombinators.Internal
-import Text.XHtmlCombinators.Combinators
 
-
-lorem' :: Block c => Attrs -> XHtmlT (State StdGen) c
+lorem' :: XHtml4 c => Attrs -> XHtmlT (State StdGen) c
 lorem' attrs = p' attrs (text =<< randomPara)
 
-lorem :: Block c => XHtmlT (State StdGen) c
+lorem :: XHtml4 c => XHtmlT (State StdGen) c
 lorem = lorem' []
 
-loremIO' :: Block c => Attrs -> XHtmlT IO c
+loremIO' :: XHtml4 c => Attrs -> XHtmlT IO c
 loremIO' attrs = p' attrs (text =<< randomParaIO)
 
-loremIO :: Block c => XHtmlT IO c
+loremIO :: XHtml4 c => XHtmlT IO c
 loremIO = loremIO' []
 
 randomPara :: Monoid a => WriterT a (State StdGen) Text

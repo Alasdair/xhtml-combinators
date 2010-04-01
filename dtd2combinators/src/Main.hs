@@ -39,7 +39,6 @@ data GroupName = TextGroup
                | NamedGroup String
                deriving (Eq, Show)
 
-
 groupNames :: [ElemGroup e] -> [String]
 groupNames = mapMaybe gname . map groupName
     where gname (NamedGroup n) = Just n
