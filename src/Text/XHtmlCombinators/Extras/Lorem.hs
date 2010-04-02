@@ -9,8 +9,8 @@
 -- Portability : GHC
 
 module Text.XHtmlCombinators.Extras.Lorem
-    ( lorem', lorem
-    , loremIO', loremIO
+    ( lorem
+    , loremIO
     ) where
 
 import Control.Applicative
@@ -24,25 +24,18 @@ import System.Random
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Text.XHtmlCombinators
 import Text.XHtmlCombinators.Internal
 
-lorem' :: XHtml4 c => Attrs -> XHtmlT (State StdGen) c
-lorem' attrs = p' attrs (text =<< randomPara)
+lorem :: (CData c) => XHtmlT (State StdGen) c
+lorem = text =<< randomPara
 
-lorem :: XHtml4 c => XHtmlT (State StdGen) c
-lorem = lorem' []
+loremIO :: (CData c) => XHtmlT IO c
+loremIO = text =<< randomParaIO
 
-loremIO' :: XHtml4 c => Attrs -> XHtmlT IO c
-loremIO' attrs = p' attrs (text =<< randomParaIO)
-
-loremIO :: XHtml4 c => XHtmlT IO c
-loremIO = loremIO' []
-
-randomPara :: Monoid a => WriterT a (State StdGen) Text
+randomPara :: XHtmlMT a (State StdGen) Text
 randomPara = lift . fmap para $ state (randomR (1, 5))
 
-randomParaIO :: Monoid a => WriterT a IO Text
+randomParaIO :: XHtmlMT a IO Text
 randomParaIO = do
     gen <- lift newStdGen
     return .  para . fst $ randomR (1, 5) gen
