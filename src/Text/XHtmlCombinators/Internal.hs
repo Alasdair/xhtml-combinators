@@ -11,7 +11,6 @@
 module Text.XHtmlCombinators.Internal where
 
 import Control.Applicative
-import qualified Control.Arrow as Arr
 import Control.Monad
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Writer
@@ -22,29 +21,21 @@ import qualified Data.Sequence as Seq
 
 import Data.Text (Text)
 import qualified Data.Text as T
-import GHC.Exts (IsString (..))
-
-data Settings = Settings
-    { metaSettings :: Maybe String }
-
-instance Monoid Settings where
-    mempty = Settings Nothing
-
-    s1 `mappend` s2 = Settings 
-        { metaSettings = metaSettings s1 `mappend` metaSettings s2 }
 
 -- The XHtmlMT monad transformer
 
 newtype XHtmlMT x t a = XHtmlMT
-    { unXHtmlMT :: WriterT (Seq x) (WriterT Settings t) a }
+    { unXHtmlMT :: WriterT (Seq x) t a }
 
 instance Functor t => Functor (XHtmlMT x t) where
     fmap f (XHtmlMT w) = XHtmlMT $ fmap f w
 
-instance Applicative t => Applicative (XHtmlMT x t) where
-    pure = XHtmlMT . pure
+instance (Functor t, Monad t) => Applicative (XHtmlMT x t) where
+    -- Could define better instance that would
+    -- just require Applicative t =>
+    pure = return
 
-    (<*>) = liftA2 id
+    (<*>) = ap
 
 instance Monad t => Monad (XHtmlMT x t) where
     return = XHtmlMT . return
@@ -52,13 +43,13 @@ instance Monad t => Monad (XHtmlMT x t) where
     (XHtmlMT w) >>= f = XHtmlMT $ w >>= unXHtmlMT . f
 
 instance MonadTrans (XHtmlMT x) where
-    lift = XHtmlMT . lift . lift
+    lift = XHtmlMT . lift
 
 tellS :: Monad t => x -> XHtmlMT x t ()
 tellS = XHtmlMT . tell . singleton
 
-execXHtmlMT :: Monad t => XHtmlMT x t () -> t (Seq x, Settings)
-execXHtmlMT = runWriterT . execWriterT . unXHtmlMT
+execXHtmlMT :: Monad t => XHtmlMT x t () -> t (Seq x)
+execXHtmlMT = execWriterT . unXHtmlMT
 
 -- Some handy aliases
 
@@ -68,11 +59,6 @@ type XHtml x = XHtmlT Identity x
 
 empty :: Monad t => XHtmlT t x
 empty = return ()
-
--- Setting settings
-
-set :: Monad t => Settings -> XHtmlT t x
-set = XHtmlMT . lift . tell
 
 type Attrs = [Attr]
 
@@ -102,10 +88,10 @@ textNode name rattrs attrs content =
 emptyNode :: Text -> Attrs -> Attrs -> Node
 emptyNode name rattrs attrs = Node name rattrs attrs Seq.empty
 
-node :: (Functor t, Monad t, Content e) => Text -> Attrs -> Attrs -> XHtmlT t e -> t (Node, Settings)
+node :: (Functor t, Monad t, Content e) => Text -> Attrs -> Attrs -> XHtmlT t e -> t Node
 node name rattrs attrs content = do
-    (nodes, settings) <- Arr.first (fmap toContent) <$> execXHtmlMT content
-    return (Node name rattrs attrs nodes, settings)
+    nodes <- fmap toContent <$> execXHtmlMT content
+    return $ Node name rattrs attrs nodes
 
 tellTextNode :: Monad t => (Node -> e) -> Text -> Attrs -> Attrs -> Text -> XHtmlT t e 
 tellTextNode c name rattrs attrs = tellS . c . textNode name rattrs attrs
@@ -116,8 +102,7 @@ tellEmptyNode c name rattrs = tellS . c . emptyNode name rattrs
 tellNode :: (Functor t, Monad t, Content a) 
          => (Node -> b) -> Text -> Attrs -> Attrs -> XHtmlT t a -> XHtmlT t b
 tellNode c name rattrs attrs content = do
-    (n, settings) <- lift $ node name rattrs attrs content
-    set settings
+    n <- lift $ node name rattrs attrs content
     tellS (c n)
 
 first :: Seq a -> a
